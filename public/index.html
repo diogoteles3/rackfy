@@ -1,0 +1,2232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rackfy - Fórum de Avaliações</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        .chat-bubble-user { background-color: #4f46e5; color: white; } /* Indigo */
+        .chat-bubble-assistant { background-color: #e5e7eb; color: #1f2937; }
+        .toast {
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444; /* red-500 */
+            border-radius: 9999px;
+            border: 1px solid white;
+        }
+        .selection-item-enter {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .selection-item-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Cabeçalho -->
+    <header class="bg-white shadow-md sticky top-0 z-20">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div id="home-logo" class="flex items-center gap-3 cursor-pointer">
+                <svg class="h-8" viewBox="0 0 155 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <text x="0" y="25" font-family="'Inter', sans-serif" font-size="28" font-weight="800" fill="#4338ca" style="text-transform: uppercase; letter-spacing: 0.02em;">
+                        RACKFY
+                    </text>
+                </svg>
+            </div>
+            <nav id="main-nav" class="flex items-center space-x-2 md:space-x-4">
+                <!-- A área de navegação e autenticação será inserida aqui pelo JavaScript -->
+            </nav>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto px-6 py-8 md:py-12">
+        
+        <!-- Seção do Fórum (visível por padrão) -->
+        <section id="forum-section">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">A Comunidade do Tênis</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-8">Avalie, discuta e encontre o equipamento perfeito para o seu jogo. Contribua com sua experiência e ajude outros tenistas.</p>
+                <button id="open-modal-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
+                    Avalie seu Equipamento!
+                </button>
+
+                <!-- Search Form -->
+                <div class="mt-8 max-w-2xl mx-auto">
+                    <form id="search-form" class="flex gap-2">
+                        <input type="search" id="search-input" placeholder="Pesquise por uma raquete ou corda..." class="w-full p-3 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <button type="submit" class="bg-slate-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-900 transition">
+                            Pesquisar
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Container da Visão Padrão (Browse) -->
+            <div id="browse-view">
+                <!-- Filtros de Categoria -->
+                <div class="flex justify-center space-x-4 mb-4">
+                    <button id="filter-rackets" class="filter-btn bg-indigo-600 text-white py-2 px-6 rounded-full font-semibold shadow-md">
+                        Raquetes
+                    </button>
+                    <button id="filter-strings" class="filter-btn bg-white text-gray-700 py-2 px-6 rounded-full font-semibold shadow-md">
+                        Cordas
+                    </button>
+                </div>
+
+                <!-- Filtros de Marca -->
+                <div id="brand-filters-container" class="flex justify-center flex-wrap gap-2 mb-8">
+                    <!-- Botões de filtro de marca serão inseridos aqui -->
+                </div>
+                
+                <!-- Container das Avaliações Agrupadas -->
+                <div id="reviews-container" class="space-y-10">
+                     <div class="text-center text-gray-500 pt-8">Carregando avaliações...</div>
+                </div>
+            </div>
+
+            <!-- Container de Resultados da Pesquisa (Oculto por padrão) -->
+            <div id="search-results-view" class="hidden">
+                <!-- Conteúdo dos resultados da pesquisa será inserido aqui -->
+            </div>
+
+        </section>
+
+        <!-- Seção do Finder (oculta por padrão) -->
+        <section id="finder-section" class="hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">Descubra seu Equipamento Ideal</h2>
+                    <p id="finder-subtitle" class="text-lg text-gray-600 max-w-3xl mx-auto">Responda algumas perguntas e nossa ferramenta irá sugerir a raquete e a corda ideais para o seu jogo.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg">
+                     <!-- Seletor de Modo do Finder -->
+                    <div class="text-center mb-8">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">O que você busca hoje?</h3>
+                        <div class="inline-flex rounded-lg shadow-sm">
+                            <button type="button" id="finder-choice-full" class="finder-choice-btn bg-indigo-600 text-white font-semibold py-2 px-6 rounded-l-lg border border-indigo-600">Raquete e Corda</button>
+                            <button type="button" id="finder-choice-string" class="finder-choice-btn bg-white text-gray-700 font-semibold py-2 px-6 rounded-r-lg border border-gray-300">Apenas Corda</button>
+                        </div>
+                    </div>
+
+                    <!-- Formulário do Finder -->
+                    <form id="finder-form">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <!-- Campo de Raquete Atual (para modo "Apenas Corda") -->
+                            <div id="finder-current-racket-group" class="md:col-span-2 hidden">
+                                <label for="finder-current-racket" class="block text-sm font-medium text-gray-700 mb-1">Qual sua raquete atual?</label>
+                                <input type="text" id="finder-current-racket" placeholder="Ex: Head Speed MP" class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="finder-level" class="block text-sm font-medium text-gray-700 mb-1">Seu Nível de Jogo</label>
+                                <select id="finder-level" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                                    <option value="iniciante">Iniciante</option>
+                                    <option value="intermediario">Intermediário</option>
+                                    <option value="avancado">Avançado</option>
+                                    <option value="competidor">Competidor</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="finder-style" class="block text-sm font-medium text-gray-700 mb-1">Seu Estilo de Jogo</label>
+                                <select id="finder-style" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                                    <option value="topspin">Fundo de Quadra (Agressivo com Topspin)</option>
+                                    <option value="flat">Fundo de Quadra (Consistente / Flat)</option>
+                                    <option value="all-court">Todos os Estilos (Versátil)</option>
+                                    <option value="serve-volley">Saque e Voleio (Jogo de Rede)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="finder-frequency" class="block text-sm font-medium text-gray-700 mb-1">Com que frequência você joga?</label>
+                                <input type="number" id="finder-frequency" placeholder="Ex: 2 (vezes por semana)" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                             <div>
+                                <label for="finder-age" class="block text-sm font-medium text-gray-700 mb-1">Sua Idade</label>
+                                <input type="number" id="finder-age" placeholder="Ex: 35" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                             <div>
+                                <label for="finder-city" class="block text-sm font-medium text-gray-700 mb-1">Sua Cidade</label>
+                                <input type="text" id="finder-city" placeholder="Ex: São Paulo" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Sexo</label>
+                                <div class="flex space-x-4 mt-2">
+                                    <label class="inline-flex items-center"><input type="radio" name="finder-gender" value="masculino" checked class="form-radio text-indigo-600"><span class="ml-2">Masculino</span></label>
+                                    <label class="inline-flex items-center"><input type="radio" name="finder-gender" value="feminino" class="form-radio text-indigo-600"><span class="ml-2">Feminino</span></label>
+                                </div>
+                            </div>
+                             <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Sente alguma dor ou desconforto ao jogar?</label>
+                                <div id="finder-pain-options" class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <label class="flex items-center"><input type="checkbox" name="pain-type" value="cotovelo" class="form-checkbox text-indigo-600 rounded"><span class="ml-2 text-sm">Cotovelo</span></label>
+                                    <label class="flex items-center"><input type="checkbox" name="pain-type" value="ombro" class="form-checkbox text-indigo-600 rounded"><span class="ml-2 text-sm">Ombro</span></label>
+                                    <label class="flex items-center"><input type="checkbox" name="pain-type" value="punho" class="form-checkbox text-indigo-600 rounded"><span class="ml-2 text-sm">Punho/Antebraço</span></label>
+                                </div>
+                            </div>
+                             <!-- Campo de Marca de Preferência (para modo "Completo") -->
+                            <div id="finder-racket-brand-group" class="md:col-span-1">
+                                <label for="finder-brand" class="block text-sm font-medium text-gray-700 mb-1">Marca de Preferência</label>
+                                <select id="finder-brand" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                                    <option value="nenhuma">Nenhuma marca preferida</option>
+                                    <option value="Head">Head</option>
+                                    <option value="Babolat">Babolat</option>
+                                    <option value="Wilson">Wilson</option>
+                                    <option value="Yonex">Yonex</option>
+                                    <option value="Tecnifibre">Tecnifibre</option>
+                                    <option value="Prince">Prince</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <label for="finder-tension" class="block text-sm font-medium text-gray-700 mb-1">Tensão que costuma usar (em Libras)</label>
+                                <input type="number" id="finder-tension" placeholder="Ex: 52" required class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                        </div>
+                        <div class="text-center mt-8">
+                            <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-12 rounded-lg shadow-lg hover:bg-indigo-700 transition">
+                                Ver Recomendação
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Resultados do Finder -->
+                    <div id="finder-results" class="hidden">
+                        <!-- O resultado será inserido aqui -->
+                    </div>
+
+                    <!-- Lojas Parceiras -->
+                    <div id="partner-stores-view" class="hidden">
+                        <!-- A lista de lojas será inserida aqui -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Perfil (oculta por padrão) -->
+        <section id="profile-section" class="hidden">
+            <!-- Conteúdo do perfil será renderizado aqui -->
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto px-6 py-4 text-center">
+            <p>&copy; 2025 Rackfy. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- MODAIS -->
+
+    <!-- Modal de Confirmação Genérico -->
+    <div id="confirmation-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 transform scale-95">
+            <h3 id="confirmation-title" class="text-lg font-bold text-gray-900 mb-4">Confirmar Ação</h3>
+            <p id="confirmation-message" class="text-gray-600 mb-6">Você tem certeza?</p>
+            <div class="flex justify-end space-x-4">
+                <button id="confirmation-cancel-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button>
+                <button id="confirmation-confirm-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal de Cordas Similares -->
+    <div id="similar-strings-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <div class="modal-content bg-white w-full max-w-2xl rounded-xl shadow-2xl transform scale-95">
+             <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="similar-strings-title" class="text-xl font-bold">Cordas Similares a...</h3>
+                <button id="close-similar-strings-modal-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div id="similar-strings-content" class="p-6">
+                <!-- Conteúdo dinâmico aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do Assistente IA -->
+    <div id="ai-assistant-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white w-full max-w-2xl h-[80vh] rounded-xl shadow-2xl flex flex-col transform scale-95">
+             <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                    Assistente Pessoal de Equipamentos
+                </h3>
+                <button id="close-ai-modal-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div id="ai-chat-box" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- Mensagens do Chat -->
+            </div>
+            <div class="p-4 border-t">
+                <form id="ai-chat-form" class="flex gap-2">
+                    <input type="text" id="ai-chat-input" placeholder="Pergunte algo sobre equipamentos..." class="w-full p-3 border-gray-300 rounded-lg shadow-sm" autocomplete="off">
+                    <button type="submit" id="ai-chat-submit-btn" class="bg-indigo-600 text-white font-bold py-3 px-5 rounded-lg shadow-lg hover:bg-indigo-700 transition flex items-center justify-center w-28">
+                        <span>Enviar</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Avaliação -->
+    <div id="review-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-30">
+        <div class="modal-content bg-white w-full max-w-2xl rounded-xl shadow-2xl p-8 transform scale-95">
+             <div class="flex justify-between items-center mb-6"><h3 id="review-modal-title" class="text-2xl font-bold">Compartilhe sua Avaliação</h3><button id="close-review-modal-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
+             <form id="review-form"><input type="hidden" id="review-form-edit-id"><div class="space-y-4"><div><label class="block text-sm font-medium text-gray-700">Tipo</label><div class="mt-2 flex space-x-4"><label class="inline-flex items-center"><input type="radio" name="equipment-type" value="racket" checked class="form-radio text-indigo-600"><span class="ml-2">Raquete</span></label><label class="inline-flex items-center"><input type="radio" name="equipment-type" value="string" class="form-radio text-indigo-600"><span class="ml-2">Corda</span></label></div></div><div><label for="equipment-name" class="block text-sm font-medium text-gray-700">Marca e Modelo</label><input type="text" id="equipment-name" placeholder="Ex: Head Speed MP 2024" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div><label for="rating" class="block text-sm font-medium text-gray-700">Nota</label><select id="rating" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option><option value="2">⭐⭐</option><option value="1">⭐</option></select></div><div><label for="review-text" class="block text-sm font-medium text-gray-700">Avaliação</label><textarea id="review-text" rows="5" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></textarea></div>
+            <div>
+                <label for="review-image-upload" class="block text-sm font-medium text-gray-700">Adicionar Foto (Opcional) <span class="text-xs text-gray-500">(JPG, PNG)</span></label>
+                <input type="file" id="review-image-input" class="hidden" accept="image/jpeg, image/png">
+                <button type="button" id="review-image-upload-btn" class="mt-1 text-sm text-indigo-600 font-semibold hover:text-indigo-800">Selecionar imagem</button>
+                <img id="review-image-preview" src="" alt="Prévia da imagem" class="mt-2 rounded-lg max-h-40 hidden">
+            </div>
+             <div class="text-right"><button type="submit" id="submit-review-btn" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg flex items-center justify-center w-28"><span>Publicar</span></button></div></div></form>
+        </div>
+    </div>
+    <!-- Modal de Edição de Perfil -->
+    <div id="profile-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-30">
+        <div class="modal-content bg-white w-full max-w-lg rounded-xl shadow-2xl p-8 transform scale-95">
+             <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-bold">Complete seu Perfil</h3><button id="close-profile-modal-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button></div><form id="profile-form"><div class="space-y-4"><div><label for="profile-form-name" class="block text-sm font-medium text-gray-700">Nome Completo</label><input type="text" id="profile-form-name" placeholder="Seu nome completo" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div><label for="profile-form-level" class="block text-sm font-medium text-gray-700">Nível de Tênis</label><input type="text" id="profile-form-level" placeholder="Ex: Intermediário (3.5)" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div><label for="profile-form-racket" class="block text-sm font-medium text-gray-700">Raquete Principal</label><input type="text" id="profile-form-racket" placeholder="Ex: Head Speed MP" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div><label for="profile-form-frequency" class="block text-sm font-medium text-gray-700">Frequência de Jogo</label><input type="text" id="profile-form-frequency" placeholder="Ex: 2-3 vezes/semana" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div><label for="profile-form-age" class="block text-sm font-medium text-gray-700">Idade</label><input type="number" id="profile-form-age" placeholder="Ex: 30" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div><label for="profile-form-city" class="block text-sm font-medium text-gray-700">Sua Cidade</label><input type="text" id="profile-form-city" placeholder="Ex: Belo Horizonte" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div><div class="text-right pt-2"><button type="submit" id="submit-profile-btn" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg flex items-center justify-center w-32"><span>Salvar Perfil</span></button></div></div></form>
+        </div>
+    </div>
+    <!-- Modal de Atualização de Encordoamento -->
+    <div id="string-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <div class="modal-content bg-white w-full max-w-lg rounded-xl shadow-2xl p-8 transform scale-95">
+             <div class="flex justify-between items-center mb-6"><h3 id="string-modal-title" class="text-2xl font-bold">Adicionar Encordoamento</h3><button id="close-string-modal-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
+             <form id="string-form">
+                 <input type="hidden" id="string-form-record-index">
+                 <div class="space-y-4">
+                      <div><label for="string-form-racket-name" class="block text-sm font-medium text-gray-700">Nome da Raquete</label><input type="text" id="string-form-racket-name" placeholder="Ex: Minha Head Speed MP" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                      <div><label for="string-form-string-name" class="block text-sm font-medium text-gray-700">Corda (Marca e Modelo)</label><input type="text" id="string-form-string-name" placeholder="Ex: Luxilon Alu Power" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                      <div><label for="string-form-type" class="block text-sm font-medium text-gray-700">Tipo de Corda</label>
+                          <select id="string-form-type" required class="w-full border-gray-300 rounded-md shadow-sm p-2 mt-1">
+                               <option value="polyester">Poliéster</option>
+                               <option value="multifilament">Multifilamento / Tripa Sintética</option>
+                               <option value="natural">Tripa Natural</option>
+                          </select>
+                     </div>
+                      <div><label for="string-form-tension" class="block text-sm font-medium text-gray-700">Tensão (em Libras)</label><input type="number" id="string-form-tension" placeholder="Ex: 52" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                      <div><label for="string-form-date" class="block text-sm font-medium text-gray-700">Data do Encordoamento</label><input type="date" id="string-form-date" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                 </div>
+                 <div class="text-right pt-6"><button type="submit" id="submit-stringing-btn" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg flex items-center justify-center w-24"><span>Salvar</span></button></div>
+             </form>
+        </div>
+    </div>
+    <!-- Modal de Autenticação (Login / Criar Conta) -->
+    <div id="auth-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white w-full max-w-md rounded-xl shadow-2xl transform scale-95">
+            <div class="flex justify-end p-2"><button id="close-auth-modal-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
+            <div class="p-8 pt-0">
+                <div class="flex border-b mb-6"><button id="login-tab-btn" class="flex-1 py-2 font-semibold border-b-2 border-indigo-600 text-indigo-600">Entrar</button><button id="signup-tab-btn" class="flex-1 py-2 font-semibold text-gray-500">Criar Conta</button></div>
+                <div id="auth-error" class="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-sm hidden"></div>
+                <!-- Formulário de Login -->
+                <form id="login-form" class="space-y-4">
+                    <div><label for="login-email" class="block text-sm font-medium text-gray-700">Email</label><input type="email" id="login-email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                    <div><label for="login-password" class="block text-sm font-medium text-gray-700">Senha</label><input type="password" id="login-password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                    <button type="submit" id="login-submit-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-5 rounded-lg flex items-center justify-center"><span>Entrar</span></button>
+                    <div class="relative my-4"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-gray-500">ou</span></div></div>
+                    <button type="button" id="google-signin-btn" class="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 font-semibold py-3 px-5 rounded-lg hover:bg-gray-50"><svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.519-3.463-11.013-8.158l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C44.437,36.218,48,30.455,48,24C48,22.659,47.862,21.35,47.611,20.083z"></path></svg>Entrar com Google</button>
+                </form>
+                <!-- Formulário de Criar Conta -->
+                <form id="signup-form" class="space-y-4 hidden">
+                    <div><label for="signup-name" class="block text-sm font-medium text-gray-700">Nome Completo</label><input type="text" id="signup-name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                    <div><label for="signup-email" class="block text-sm font-medium text-gray-700">Email</label><input type="email" id="signup-email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                    <div><label for="signup-password" class="block text-sm font-medium text-gray-700">Senha</label><input type="password" id="signup-password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"></div>
+                    <button type="submit" id="signup-submit-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-5 rounded-lg flex items-center justify-center"><span>Criar Conta</span></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast fixed bottom-5 right-5 bg-gray-900 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform translate-y-2 z-50">
+        <p id="toast-message"></p>
+    </div>
+    
+    <script type="module">
+        // Firebase SDK (versão atualizada)
+        import { initializeApp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, linkWithPopup, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, onSnapshot, query, where, getDocs, serverTimestamp, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- DADOS DE ESPECIALISTAS E EQUIPAMENTOS (Permanecem no código) ---
+        const specialistReviews = [
+             {
+                 equipment: 'Head Speed MP 2024',
+                 summary: 'A nova versão da Speed MP com a tecnologia Auxetic 2.0 aprimora a sensação e a conexão com a bola, mantendo a versatilidade que consagrou a linha.',
+                 pros: ['Sensação e Conexão aprimoradas', 'Ótima manuseabilidade', 'Bom potencial de spin'],
+                 cons: ['Pode faltar potência para jogadores com swing curto', 'Controle não é tão cirúrgico'],
+                 specs: { 'Tamanho da Cabeça': '100 sq. in.', 'Peso (sem corda)': '300g', 'Balanço': '4 pts HL', 'Stiffness (RA)': '62', 'Swingweight': '323' }
+            },
+             {
+                 equipment: 'Babolat Pure Aero 2023',
+                 summary: 'A Babolat Pure Aero continua sendo a referência para jogadores que constroem seus pontos com spin pesado. A versão 2023 traz um novo layup de fibras de linho (NF²) para filtrar vibrações.',
+                 pros: ['Potencial de spin massivo', 'Potência fácil do fundo de quadra', 'Aerodinâmica excelente'],
+                 cons: ['Controle e toque podem ser um desafio', 'Pode ser rígida para jogadores sensíveis'],
+                 specs: { 'Tamanho da Cabeça': '100 sq. in.', 'Peso (sem corda)': '300g', 'Balanço': '4 pts HL', 'Stiffness (RA)': '65', 'Swingweight': '324' }
+            }
+        ];
+       
+        const racquetsDB = [
+             { name: 'Wilson Clash 100 v2', brand: 'Wilson', profiles: ['conforto', 'all-court'], levels: ['iniciante', 'intermediario'], gender: 'unisex', description: 'Flexível e amigável ao braço, ideal para jogadores que buscam conforto e uma sensação única.', stiffnessRA: 57, weight: 295, swingweight: 312, availability: 'high', recommendedStrings: { spin: 'Luxilon Alu Power Soft', comfort: 'Wilson NXT Comfort' }, priceBRL: '1499,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342898/raquete-de-tenis-wilson-clash-100-v2-3_640x640_fill_ffffff_h3237a.png' },
+             { name: 'Head Boom MP', brand: 'Head', profiles: ['conforto', 'potencia'], levels: ['iniciante', 'intermediario'], gender: 'unisex', description: 'Combina potência fácil com uma sensação muito confortável e perdoável.', stiffnessRA: 64, weight: 298, swingweight: 318, availability: 'high', recommendedStrings: { spin: 'Head Lynx Tour', comfort: 'Head Velocity MLT' }, priceBRL: '1499,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342898/233512_boom_mp_l_2022_bvywgl.png' },
+             { name: 'Babolat Pure Drive', brand: 'Babolat', profiles: ['potencia', 'spin'], levels: ['intermediario', 'avancado'], gender: 'unisex', description: 'Uma arma de potência e spin do fundo de quadra, famosa por sua jogabilidade explosiva.', stiffnessRA: 71, weight: 300, swingweight: 320, availability: 'high', recommendedStrings: { spin: 'Babolat RPM Blast', comfort: 'Babolat Xcel' }, priceBRL: '1399,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342899/raquete-de-tenis-babolat-pure-drive-2021-101435_1_qsjygf.png' },
+             { name: 'Babolat Pure Aero', brand: 'Babolat', profiles: ['spin', 'potencia'], levels: ['intermediario', 'avancado', 'competidor'], gender: 'unisex', description: 'A referência para spin, ideal para jogadores modernos que constroem pontos com topspin pesado.', stiffnessRA: 67, weight: 300, swingweight: 324, availability: 'high', recommendedStrings: { spin: 'Babolat RPM Rough', comfort: 'Babolat VS Touch' }, priceBRL: '1599,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342898/raquete-de-tenis-babolat-pure-aero-2023-1_1_m5bkei.png' },
+             { name: 'Wilson Blade 98 16x19', brand: 'Wilson', profiles: ['controle', 'sensacao'], levels: ['intermediario', 'avancado', 'competidor'], gender: 'unisex', description: 'Controle e sensação excepcionais para jogadores com swing completo que gostam de sentir a bola.', stiffnessRA: 66, weight: 305, swingweight: 315, availability: 'high', recommendedStrings: { spin: 'Luxilon 4G', comfort: 'Wilson NXT' }, priceBRL: '1649,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342899/raquete-de-tenis-blade-98-16x19-v8-0-wr078711u_j85kbl.jpg' },
+             { name: 'Head Speed MP', brand: 'Head', profiles: ['controle', 'versatilidade'], levels: ['intermediario', 'avancado', 'competidor'], gender: 'unisex', description: 'Uma raquete versátil que oferece uma mistura fantástica de velocidade, spin e controle.', stiffnessRA: 62, weight: 300, swingweight: 323, availability: 'high', recommendedStrings: { spin: 'Head Hawk Touch', comfort: 'Head Velocity MLT' }, priceBRL: '1799,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342898/raquete-de-tenis-head-speed-mp-2024-1_1_wswj5c.png' },
+             { name: 'Head Radical MP', brand: 'Head', profiles: ['controle', 'all-court'], levels: ['intermediario', 'avancado', 'competidor'], gender: 'unisex', description: 'Para o jogador versátil que precisa de uma raquete que faça de tudo um pouco, com ênfase no controle.', stiffnessRA: 65, weight: 300, swingweight: 321, availability: 'high', recommendedStrings: { spin: 'Head Lynx Tour', comfort: 'Head Velocity MLT' }, priceBRL: '1699,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726345535/head-radical-mp-2023_y7xljc.png' },
+             { name: 'Yonex EZONE 98', brand: 'Yonex', profiles: ['potencia', 'conforto'], levels: ['intermediario', 'avancado', 'competidor'], gender: 'unisex', description: 'Potência controlável com um sweet spot generoso e muito conforto, marca registrada da Yonex.', stiffnessRA: 64, weight: 305, swingweight: 318, availability: 'low', recommendedStrings: { spin: 'Yonex Poly Tour Pro', comfort: 'Yonex Rexis Speed' }, priceBRL: '2199,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726342898/RAQUETEEZONE98_n3jwn3.png' },
+             { name: 'Yonex VCORE 98', brand: 'Yonex', profiles: ['spin', 'controle'], levels: ['intermediario', 'avancado', 'competidor'], gender: 'unisex', description: 'Uma máquina de spin com ótimo controle para jogadores agressivos que buscam criar ângulos e dominar.', stiffnessRA: 66, weight: 305, swingweight: 325, availability: 'high', recommendedStrings: { spin: 'Yonex Poly Tour Rev', comfort: 'Yonex Rexis Speed' }, priceBRL: '1899,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726345535/yonex-vcore-98-2023_u31j9p.png' },
+             { name: 'Wilson Pro Staff 97 v14', brand: 'Wilson', profiles: ['controle', 'precisao'], levels: ['avancado', 'competidor'], gender: 'unisex', description: 'Precisão cirúrgica e sensação clássica para jogadores avançados com boa técnica e que gostam de atacar.', stiffnessRA: 66, weight: 315, swingweight: 325, availability: 'high', recommendedStrings: { spin: 'Luxilon 4G', comfort: 'Wilson Natural Gut' }, priceBRL: '1799,90', imageUrl: 'https://res.cloudinary.com/dni86i2qa/image/upload/v1726345535/wilson-pro-staff-97-v14_x2u46r.png' },
+        ];
+        const stringsDB = [
+             // Super Premium
+             { name: 'Babolat VS Touch', type: 'natural', profile: ['conforto', 'potencia', 'sensacao'], priceTier: 'super_premium', comfort: 10, power: 9, control: 8, spin: 6, stiffness: 2, description: 'O padrão ouro em conforto, sensação e manutenção de tensão.' },
+             { name: 'Wilson Natural Gut', type: 'natural', profile: ['conforto', 'potencia', 'sensacao'], priceTier: 'super_premium', comfort: 10, power: 9, control: 8, spin: 6, stiffness: 2, description: 'Oferece a máxima jogabilidade, conforto e potência.' },
+             // Premium
+             { name: 'Luxilon ALU Power', type: 'polyester', profile: ['controle', 'spin'], priceTier: 'premium', comfort: 4, power: 7, control: 9, spin: 8, stiffness: 8, description: 'A corda mais popular no circuito profissional. Controle e sensação inigualáveis para quem não tem problemas no braço.' },
+             { name: 'Luxilon 4G', type: 'polyester', profile: ['controle', 'durabilidade'], priceTier: 'premium', comfort: 3, power: 6, control: 10, spin: 7, stiffness: 9, description: 'Excelente manutenção de tensão e controle cirúrgico. É uma corda rígida.'},
+             { name: 'Babolat RPM Blast', type: 'polyester', profile: ['spin', 'controle'], priceTier: 'premium', comfort: 4, power: 7, control: 8, spin: 9, stiffness: 8, description: 'Famosa pelo seu spin massivo e sensação "morta" que favorece swings rápidos.' },
+             { name: 'Tecnifibre Triax', type: 'multifilament-poly', profile: ['conforto', 'potencia', 'spin'], priceTier: 'premium', comfort: 8, power: 8, control: 7, spin: 7, stiffness: 4, description: 'Uma corda híbrida que mistura multifilamento e poliéster, buscando o melhor dos dois mundos.' },
+             // Intermediária
+             { name: 'Solinco Hyper-G', type: 'polyester', profile: ['spin'], priceTier: 'intermediaria', comfort: 5, power: 7, control: 8, spin: 9, stiffness: 7, description: 'Excelente para spin, esta corda verde é uma das mais populares. Performance de poliéster tradicional.' },
+             { name: 'Solinco Hyper-G Soft', type: 'polyester', profile: ['spin', 'conforto'], priceTier: 'intermediaria', comfort: 7, power: 7, control: 8, spin: 9, stiffness: 5, description: 'Uma versão mais macia da Hyper-G, oferecendo o mesmo spin com mais conforto.' },
+             { name: 'Yonex Poly Tour Pro', type: 'polyester', profile: ['controle', 'conforto'], priceTier: 'intermediaria', comfort: 7, power: 7, control: 8, spin: 7, stiffness: 5, description: 'Um co-poliéster macio, que oferece um ótimo equilíbrio de potência, controle e conforto.' },
+             { name: 'Head Lynx Tour', type: 'polyester', profile: ['controle', 'spin'], priceTier: 'intermediaria', comfort: 6, power: 6, control: 9, spin: 8, stiffness: 6, description: 'Ótima para controle e spin, com boa manutenção de tensão.' },
+             { name: 'Wilson NXT Comfort', type: 'multifilament', profile: ['conforto', 'potencia'], priceTier: 'intermediaria', comfort: 9, power: 8, control: 7, spin: 5, stiffness: 3, description: 'Uma das multifilamentos mais confortáveis do mercado, ideal para quem busca alívio para o braço.'},
+             // Econômica
+             { name: 'Wilson Synthetic Gut Power', type: 'synthetic', profile: ['all-around', 'potencia'], priceTier: 'economica', comfort: 7, power: 8, control: 6, spin: 5, stiffness: 4, description: 'Ótima jogabilidade e conforto por um preço acessível. Uma excelente corda de entrada.' },
+             { name: 'Gosen OG-Sheep Micro', type: 'synthetic', profile: ['all-around', 'conforto'], priceTier: 'economica', comfort: 8, power: 7, control: 7, spin: 4, stiffness: 3, description: 'Uma corda sintética clássica, conhecida por sua sensação macia e bom custo-benefício.' },
+        ];
+
+        const partnerStores = [
+             { id: 'store1', name: 'Tennis Point Pro', city: 'São Paulo', type: 'physical', contact: 'contato@tennispointpro.com', whatsapp: '5511987654321', logo: 'https://placehold.co/80x40/cbd5e1/475569?text=TennisPoint', description: 'Especialistas em equipamentos de performance.', address: 'Rua dos Tenistas, 123, São Paulo', availability: 'Encordoamento em 24h', deliveryTime: '1-3 dias úteis' },
+             { id: 'store2', name: 'Pró Spin', city: 'Rio de Janeiro', type: 'physical', contact: 'vendas@prospin.com.br', whatsapp: '5521912345678', logo: 'https://placehold.co/80x40/dbeafe/1e3a8a?text=Pr%C3%B3+Spin', description: 'A maior loja de tênis do Rio. Consultoria especializada.', address: 'Avenida da Praia, 456, Rio de Janeiro', availability: 'Encordoamento no mesmo dia', deliveryTime: '2-4 dias úteis' },
+             { id: 'store3', name: 'Mundo do Tenista', city: 'Belo Horizonte', type: 'physical', contact: 'atendimento@mundodotenista.com', whatsapp: '5531998765432', logo: 'https://placehold.co/80x40/dcfce7/14532d?text=MundoTenista', description: 'Tudo para o seu jogo, do iniciante ao profissional.', address: 'Praça da Savassi, 789, Belo Horizonte', availability: 'Encordoamento em até 48h', deliveryTime: '1-2 dias úteis' },
+             { id: 'store4', name: 'Rackfy Online', city: 'Online', type: 'virtual', contact: 'vendas@rackfy.com', whatsapp: '5511911223344', logo: 'https://placehold.co/80x40/4338ca/ffffff?text=RackfyOnline', description: 'Enviamos para todo o Brasil com os melhores preços.', address: 'E-commerce', availability: 'Envio em 24h', deliveryTime: '3-7 dias úteis' }
+        ];
+
+        // --- SELETORES GLOBAIS ---
+        const mainNav = document.getElementById('main-nav');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const searchForm = document.getElementById('search-form');
+        const forumSection = document.getElementById('forum-section');
+        const profileSection = document.getElementById('profile-section');
+        const finderSection = document.getElementById('finder-section');
+        const homeLogo = document.getElementById('home-logo');
+        const authModal = document.getElementById('auth-modal');
+        const authError = document.getElementById('auth-error');
+        
+        // --- ESTADO GLOBAL ---
+        let app, auth, db, storage, appId;
+        let currentUser = null;
+        let userId = null;
+        let currentFilter = 'racket';
+        let selectedBrand = 'all';
+        let allReviews = [];
+        let unsubscribeReviews = null;
+        let userNotifications = [];
+        let finderMode = 'full'; // 'full' or 'string'
+        let currentSelection = { rackets: [], strings: [] };
+        let currentConfirmationCallback = null;
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', initApp);
+        
+        async function initApp() {
+            setLogLevel('debug');
+
+            let firebaseConfig;
+
+            if (typeof __firebase_config !== 'undefined' && __firebase_config !== '{{__firebase_config}}') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else {
+                 // Configuração do Firebase inserida para deploy.
+                 firebaseConfig = {
+                    apiKey: "AIzaSyBgSxToMWlYlok77qo8c7KA9CIf9YHorA4",
+                    authDomain: "rackfy-ae1bb.firebaseapp.com",
+                    databaseURL: "https://rackfy-ae1bb-default-rtdb.firebaseio.com",
+                    projectId: "rackfy-ae1bb",
+                    storageBucket: "rackfy-ae1bb.appspot.com",
+                    messagingSenderId: "765715114564",
+                    appId: "1:765715114564:web:0c2c66943e22b1f92fea11",
+                    measurementId: "G-9HDZJMBBF3"
+                };
+            }
+            
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+            appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
+
+            setupEventListeners();
+
+            // onAuthStateChanged lida com todas as mudanças de login/logout em qualquer ambiente
+            onAuthStateChanged(auth, async (user) => {
+                try {
+                    if (user && !user.isAnonymous) {
+                        // --- Logged-in User Flow ---
+                        userId = user.uid;
+                        const userRef = doc(db, `/artifacts/${appId}/users/${userId}`);
+                        const userSnap = await getDoc(userRef);
+                        let userProfile = userSnap.data();
+                        let isNewUser = false;
+
+                        if (!userSnap.exists()) {
+                            isNewUser = true;
+                            const nameFromSignup = document.getElementById('signup-name').value;
+                            const newUserProfile = { 
+                                name: user.displayName || nameFromSignup || "Novo Usuário", 
+                                email: user.email, 
+                                photoURL: user.photoURL || null,
+                                level: '', racket: '', frequency: '', age: '', city: '',
+                                shareEquipment: false,
+                                stringingProfile: [],
+                                recommendations: [] 
+                            };
+                            await setDoc(userRef, newUserProfile);
+                            userProfile = newUserProfile;
+                        }
+                        
+                        currentUser = { ...user, ...userProfile };
+                        updateUIForLoggedInUser(currentUser);
+                        authModal.classList.add('hidden');
+                        
+                        if(isNewUser) {
+                            showToast(`Bem-vindo, ${userProfile.name}! Conta criada com sucesso.`);
+                            document.getElementById('profile-modal').classList.remove('hidden'); // Prompt to complete profile
+                        } else {
+                            showToast('Login realizado com sucesso!');
+                        }
+
+                        checkStringingNotifications();
+
+                    } else {
+                        // --- Logged-out or Anonymous User Flow ---
+                        currentUser = null;
+                        userId = user ? user.uid : null; // Keep UID if anonymous
+                        updateUIForLoggedOutUser();
+                        
+                        if (!user) { // Only sign in anonymously if there's NO user at all
+                             await signInAnonymously(auth);
+                             // The listener will re-run after this completes.
+                             return; // Exit here to avoid running listenToReviews twice.
+                        }
+                    }
+
+                    // Start listening to reviews only ONCE, after an auth state is confirmed (anonymous or logged-in)
+                    if (!unsubscribeReviews) {
+                        listenToReviews();
+                    }
+                } catch (error) {
+                    console.error("Authentication Handler Error:", error);
+                    let userMessage = 'Ocorreu um erro ao processar seu login. Tente novamente.';
+                    // Check for Firestore permission denied error, which is a common issue on deploy
+                    if (error.code === 'permission-denied') {
+                        userMessage = 'Erro de permissão. Verifique se as Regras de Segurança do Firestore foram configuradas corretamente no seu projeto Firebase.';
+                    }
+                    authError.textContent = userMessage;
+                    authError.classList.remove('hidden');
+                    // Ensure UI is in a logged-out state on error
+                    currentUser = null;
+                    userId = null;
+                    updateUIForLoggedOutUser();
+                    signOut(auth).catch(e => console.error("Sign out failed after error:", e));
+                }
+            });
+        }
+        
+        // ========================================================================
+        // MANIPULAÇÃO DE UI E EVENTOS
+        // ========================================================================
+        
+        function setupEventListeners() {
+            homeLogo.addEventListener('click', showForum);
+            document.getElementById('filter-rackets').addEventListener('click', () => handleFilterChange('racket'));
+            document.getElementById('filter-strings').addEventListener('click', () => handleFilterChange('string'));
+            searchForm.addEventListener('submit', handleSearchSubmit);
+            document.getElementById('finder-form').addEventListener('submit', handleFinderSubmit);
+            document.getElementById('string-form').addEventListener('submit', handleStringUpdateSubmit);
+            document.getElementById('ai-chat-form').addEventListener('submit', handleAIChatSubmit);
+            
+            document.getElementById('finder-choice-full').addEventListener('click', () => setFinderMode('full'));
+            document.getElementById('finder-choice-string').addEventListener('click', () => setFinderMode('string'));
+
+            openModalBtn.addEventListener('click', () => {
+                if (currentUser) {
+                    openReviewModalForCreate();
+                } else {
+                    authModal.classList.remove('hidden');
+                }
+            });
+
+            document.getElementById('close-review-modal-btn').addEventListener('click', () => document.getElementById('review-modal').classList.add('hidden'));
+            document.getElementById('close-profile-modal-btn').addEventListener('click', () => document.getElementById('profile-modal').classList.add('hidden'));
+            document.getElementById('close-string-modal-btn').addEventListener('click', () => document.getElementById('string-modal').classList.add('hidden'));
+            document.getElementById('close-ai-modal-btn').addEventListener('click', () => document.getElementById('ai-assistant-modal').classList.add('hidden'));
+            document.getElementById('close-similar-strings-modal-btn').addEventListener('click', () => document.getElementById('similar-strings-modal').classList.add('hidden'));
+            
+            document.getElementById('close-auth-modal-btn').addEventListener('click', () => authModal.classList.add('hidden'));
+            const loginTab = document.getElementById('login-tab-btn');
+            const signupTab = document.getElementById('signup-tab-btn');
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('border-indigo-600', 'text-indigo-600');
+                signupTab.classList.remove('border-indigo-600', 'text-indigo-600');
+                signupTab.classList.add('text-gray-500');
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+            });
+            signupTab.addEventListener('click', () => {
+                signupTab.classList.add('border-indigo-600', 'text-indigo-600');
+                loginTab.classList.remove('border-indigo-600', 'text-indigo-600');
+                loginTab.classList.add('text-gray-500');
+                signupForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            });
+
+            document.getElementById('login-form').addEventListener('submit', handleEmailLogin);
+            document.getElementById('signup-form').addEventListener('submit', handleEmailSignup);
+            document.getElementById('google-signin-btn').addEventListener('click', handleGoogleSignin);
+
+            document.getElementById('review-form').addEventListener('submit', handleReviewFormSubmit);
+            document.getElementById('profile-form').addEventListener('submit', handleProfileFormSubmit);
+            document.getElementById('review-image-upload-btn').addEventListener('click', () => document.getElementById('review-image-input').click());
+            document.getElementById('review-image-input').addEventListener('change', (e) => handleImagePreview(e, 'review-image-preview'));
+            
+            forumSection.addEventListener('click', (e) => {
+                if (e.target.classList.contains('toggle-discussion-btn')) {
+                    const reviewId = e.target.dataset.reviewId;
+                    const review = allReviews.find(r => r.id === reviewId);
+                    const commentsContainer = document.getElementById(`comments-${reviewId}`);
+                    if (commentsContainer) {
+                        const isHidden = commentsContainer.classList.toggle('hidden');
+                        const initialText = (review.comments || []).length > 0 ? 'Ver discussão' : 'Seja o primeiro a comentar';
+                        e.target.textContent = isHidden ? initialText : 'Ocultar discussão';
+                    }
+                }
+                // Handle deleting comments from the main forum view
+                if (e.target.matches('.delete-comment-btn')) {
+                    const reviewId = e.target.dataset.reviewId;
+                    const commentIndex = parseInt(e.target.dataset.commentIndex, 10);
+                    confirmAction('Tem certeza que deseja excluir este comentário?', () => handleDeleteComment(reviewId, commentIndex));
+                }
+            });
+
+            forumSection.addEventListener('submit', (e) => {
+                if (e.target.classList.contains('comment-form')) {
+                    handleCommentSubmit(e);
+                }
+            });
+
+            finderSection.addEventListener('click', (e) => {
+                if (e.target.matches('.show-similar-btn')) {
+                    const stringName = e.target.dataset.stringName;
+                    findAndShowSimilarStrings(stringName);
+                } else if (e.target.matches('.add-to-selection-btn')) {
+                    const name = e.target.dataset.name;
+                    const type = e.target.dataset.type;
+                    addToSelection(name, type);
+                } else if (e.target.matches('.selection-group-stores-btn')) {
+                    const city = document.getElementById('finder-city').value;
+                    renderPartnerStoresForSelection(city);
+                }
+            });
+            document.getElementById('similar-strings-modal').addEventListener('click', (e) => {
+                 if (e.target.matches('.add-to-selection-btn')) {
+                    const name = e.target.dataset.name;
+                    const type = e.target.dataset.type;
+                    addToSelection(name, type);
+                }
+            });
+
+            // Confirmation Modal Listeners
+            document.getElementById('confirmation-cancel-btn').addEventListener('click', () => {
+                document.getElementById('confirmation-modal').classList.add('hidden');
+                currentConfirmationCallback = null;
+            });
+            document.getElementById('confirmation-confirm-btn').addEventListener('click', () => {
+                if (currentConfirmationCallback) {
+                    currentConfirmationCallback();
+                }
+                document.getElementById('confirmation-modal').classList.add('hidden');
+                currentConfirmationCallback = null;
+            });
+        }
+
+        function updateUINav(user) {
+            const commonLinks = `
+                <a href="#" class="home-nav-link text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md font-medium text-sm md:text-base">Fórum</a>
+                <a href="#" class="finder-nav-link text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md font-medium text-sm md:text-base">Descubra</a>
+            `;
+            const aiAssistantButton = `
+                <button id="ai-assistant-btn" class="bg-indigo-100 text-indigo-700 font-semibold py-2 px-3 rounded-lg shadow-sm hover:bg-indigo-200 transition text-sm md:text-base flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                    Assistente IA
+                </button>
+            `;
+
+            const notificationButton = `
+                <div class="relative">
+                    <button id="notification-btn" class="relative text-gray-600 hover:text-indigo-600 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                        <span id="notification-badge" class="notification-badge hidden"></span>
+                    </button>
+                    <div id="notification-panel" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-20 border">
+                        <div class="p-4 font-bold border-b">Notificações</div>
+                        <div id="notification-list" class="p-2 max-h-96 overflow-y-auto">
+                            <!-- Notificações serão inseridas aqui -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+
+            if (user) {
+                 mainNav.innerHTML = commonLinks + aiAssistantButton + notificationButton + `
+                    <a href="#" class="profile-nav-link text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md font-medium text-sm md:text-base">Meu Perfil</a>
+                    <img src="${user.photoURL || `https://placehold.co/40x40/E0E7FF/3730A3?text=${(user.name || 'U').charAt(0)}`}" alt="Foto" class="w-10 h-10 rounded-full cursor-pointer profile-nav-link"/>
+                    <button id="signout-btn" class="text-sm text-gray-500 hover:text-indigo-600 hidden md:block">Sair</button>
+                `;
+            } else {
+                 mainNav.innerHTML = commonLinks + aiAssistantButton + `
+                    <button id="auth-trigger-btn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-indigo-700 transition text-sm md:text-base">Entrar</button>
+                `;
+            }
+
+            document.getElementById('ai-assistant-btn').addEventListener('click', showAIAssistant);
+            const notificationBtn = document.getElementById('notification-btn');
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', toggleNotificationPanel);
+            }
+        }
+
+        function updateUIForLoggedInUser(user) {
+            updateUINav(user);
+            openModalBtn.disabled = false;
+            openModalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            openModalBtn.title = "";
+            
+            document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
+            document.querySelectorAll('.home-nav-link').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); showForum(); }));
+            document.querySelectorAll('.finder-nav-link').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); showFinder(); }));
+            document.querySelectorAll('.profile-nav-link').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); showProfile(); }));
+        }
+
+        function updateUIForLoggedOutUser() {
+            updateUINav(null);
+            openModalBtn.disabled = true;
+            openModalBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            openModalBtn.title = "Faça login para poder avaliar.";
+            document.getElementById('auth-trigger-btn').addEventListener('click', () => authModal.classList.remove('hidden'));
+            document.querySelector('.home-nav-link').addEventListener('click', (e) => { e.preventDefault(); showForum(); });
+            document.querySelector('.finder-nav-link').addEventListener('click', (e) => { e.preventDefault(); showFinder(); });
+            showForum();
+        }
+
+        // ========================================================================
+        // LÓGICA DE AUTENTICAÇÃO
+        // ========================================================================
+        async function handleEmailLogin(e){ e.preventDefault(); const btn = document.getElementById('login-submit-btn'); showLoading(btn); try { const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; await signInWithEmailAndPassword(auth, email, password); authError.classList.add('hidden'); } catch (error) { authError.textContent = getFirebaseAuthErrorMessage(error); authError.classList.remove('hidden'); } finally { hideLoading(btn, 'Entrar'); } }
+        async function handleEmailSignup(e){ e.preventDefault(); const btn = document.getElementById('signup-submit-btn'); showLoading(btn); try { const email = document.getElementById('signup-email').value; const password = document.getElementById('signup-password').value; await createUserWithEmailAndPassword(auth, email, password); authError.classList.add('hidden'); } catch (error) { authError.textContent = getFirebaseAuthErrorMessage(error); authError.classList.remove('hidden'); } finally { hideLoading(btn, 'Criar Conta'); } }
+        async function handleGoogleSignin() { try { const provider = new GoogleAuthProvider(); await signInWithPopup(auth, provider); authError.classList.add('hidden'); } catch (error) { authError.textContent = getFirebaseAuthErrorMessage(error); authError.classList.remove('hidden'); } }
+        async function linkGoogleAccount() { if (!currentUser) return; try { const provider = new GoogleAuthProvider(); await linkWithPopup(auth.currentUser, provider); showToast('Conta do Google vinculada com sucesso!'); const userRef = doc(db, `/artifacts/${appId}/users/${auth.currentUser.uid}`); const userSnap = await getDoc(userRef); currentUser = { ...auth.currentUser, ...userSnap.data() }; showProfile(currentUser); } catch (error) { console.error("Erro ao vincular conta do Google:", error); showToast(`Erro ao vincular conta: ${getFirebaseAuthErrorMessage(error)}`, 'error'); } }
+
+
+        // ========================================================================
+        // LÓGICA DE DADOS, RENDERIZAÇÃO E FILTROS
+        // ========================================================================
+        
+        function listenToReviews() {
+            if (unsubscribeReviews) unsubscribeReviews();
+            const reviewsPath = `/artifacts/${appId}/public/data/reviews`;
+            const q = query(collection(db, reviewsPath));
+
+            unsubscribeReviews = onSnapshot(q, (querySnapshot) => {
+                let reviews = querySnapshot.docs.map(reviewDoc => {
+                    return { id: reviewDoc.id, ...reviewDoc.data() };
+                });
+                
+                allReviews = reviews.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+
+                renderBrandFilters();
+                renderReviews();
+            }, (error) => {
+                console.error("Erro ao buscar reviews:", error);
+                document.getElementById('reviews-container').innerHTML = `<div class="text-center text-red-500 pt-8">Erro ao carregar avaliações. Verifique as permissões do banco de dados.</div>`;
+            });
+        }
+        
+        function getBrandFromName(equipmentName) {
+            if (!equipmentName) return 'Outras';
+            return equipmentName.split(' ')[0];
+        }
+
+        function createReviewCard(review) {
+            const reviewCard = document.createElement('div');
+            reviewCard.className = "bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow";
+            
+            const stars = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+            const photoURL = review.authorPhotoURL || `https://placehold.co/48x48/E0E7FF/3730A3?text=${(review.authorName || '?').charAt(0)}`;
+            const authorInfo = `<p class="text-xs text-gray-500 font-medium">Nível: ${review.authorLevel || 'Não informado'}</p>`;
+            const equipmentInfo = (review.authorRacket || review.authorString) ? `
+                <div class="mt-4 ml-auto w-full md:w-48 bg-gray-50 p-3 rounded-lg border text-xs flex-shrink-0">
+                    <h5 class="font-bold text-gray-700 mb-2">Equipamento do Avaliador</h5>
+                    ${review.authorRacket ? `<p><span class="font-semibold">Raquete:</span> ${review.authorRacket}</p>` : ''}
+                    ${review.authorString ? `<p><span class="font-semibold">Corda:</span> ${review.authorString} (${review.authorTension || 'N/A'} lbs)</p>` : ''}
+                </div>
+            ` : '';
+
+            const commentsHTML = (review.comments || []).map((comment, index) => {
+                const commentPhoto = comment.authorPhotoURL || `https://placehold.co/32x32/E0E7FF/3730A3?text=${(comment.authorName || '?').charAt(0)}`;
+                const commentActions = (currentUser && currentUser.uid === comment.authorId) ? 
+                    `<div class="ml-auto text-xs">
+                        <button class="text-gray-500 hover:text-red-600 delete-comment-btn" data-review-id="${review.id}" data-comment-index="${index}">Excluir</button>
+                    </div>` : '';
+
+                return `
+                <div class="flex items-start space-x-3">
+                    <img src="${commentPhoto}" alt="${comment.authorName}" class="w-8 h-8 rounded-full flex-shrink-0"/>
+                    <div class="flex-1">
+                        <div class="flex items-baseline">
+                            <p class="font-semibold text-sm text-gray-800">${comment.authorName}</p>
+                            ${commentActions}
+                        </div>
+                        <p class="text-gray-600">${comment.text}</p>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            const commentFormDisplay = currentUser ? '' : 'hidden';
+
+            reviewCard.innerHTML = `
+                <div class="flex items-start space-x-4">
+                    <img src="${photoURL}" alt="${review.authorName}" class="w-12 h-12 rounded-full flex-shrink-0"/>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-lg text-gray-900">${review.authorName}</p>
+                                ${authorInfo}
+                            </div>
+                            <div class="text-lg">${stars}</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-t mt-3 pt-3">
+                            <div class="flex-1">
+                                <p class="text-gray-800 font-semibold">${review.equipment}</p>
+                                <p class="text-gray-700 leading-relaxed mt-1">${review.text}</p>
+                                ${review.imageUrl ? `<img src="${review.imageUrl}" alt="Imagem da avaliação" class="mt-4 rounded-lg max-w-sm">` : ''}
+                            </div>
+                            ${equipmentInfo}
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <button class="toggle-discussion-btn text-indigo-600 font-semibold text-sm hover:text-indigo-800" data-review-id="${review.id}">${(review.comments || []).length > 0 ? 'Ver discussão' : 'Seja o primeiro a comentar'}</button>
+                            <div id="comments-${review.id}" class="hidden mt-4 space-y-4">
+                                ${commentsHTML}
+                                <form class="comment-form flex items-start space-x-3 pt-4 ${commentFormDisplay}" data-review-id="${review.id}" autocomplete="off">
+                                    <img src="${currentUser?.photoURL || `https://placehold.co/40x40/E0E7FF/3730A3?text=${(currentUser?.name || '?').charAt(0)}`}" alt="Seu Perfil" class="w-8 h-8 rounded-full flex-shrink-0"/>
+                                    <div class="flex-1">
+                                        <textarea class="comment-input w-full border-gray-300 rounded-md shadow-sm p-2 text-sm" placeholder="Adicione um comentário..." required></textarea>
+                                        <button type="submit" class="comment-submit-btn mt-2 bg-indigo-500 text-white font-semibold py-1 px-3 rounded-lg text-sm hover:bg-indigo-600 transition flex items-center justify-center w-28"><span>Comentar</span></button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            return reviewCard;
+        }
+
+        function renderBrandFilters() {
+            const brandFiltersContainer = document.getElementById('brand-filters-container');
+            const filteredReviews = allReviews.filter(r => r.type === currentFilter);
+            const brands = [...new Set(filteredReviews.map(r => getBrandFromName(r.equipment)))];
+            brands.sort();
+
+            brandFiltersContainer.innerHTML = `<button class="brand-filter-btn py-1 px-4 rounded-full text-sm font-semibold shadow-sm ${selectedBrand === 'all' ? 'bg-slate-800 text-white' : 'bg-white text-gray-700'}" data-brand="all">Todas</button>`;
+
+            brands.forEach(brand => {
+                brandFiltersContainer.innerHTML += `<button class="brand-filter-btn py-1 px-4 rounded-full text-sm font-semibold shadow-sm ${selectedBrand === brand ? 'bg-slate-800 text-white' : 'bg-white text-gray-700'}" data-brand="${brand}">${brand}</button>`;
+            });
+
+            document.querySelectorAll('.brand-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedBrand = btn.dataset.brand;
+                    document.querySelectorAll('.brand-filter-btn').forEach(b => {
+                        b.classList.remove('bg-slate-800', 'text-white');
+                        b.classList.add('bg-white', 'text-gray-700');
+                    });
+                    btn.classList.add('bg-slate-800', 'text-white');
+                    btn.classList.remove('bg-white', 'text-gray-700');
+                    renderReviews();
+                });
+            });
+        }
+
+        function renderReviews() {
+            const reviewsContainer = document.getElementById('reviews-container');
+            reviewsContainer.innerHTML = '';
+            let filteredReviews = allReviews.filter(r => r.type === currentFilter);
+
+            if (selectedBrand !== 'all') {
+                filteredReviews = filteredReviews.filter(r => getBrandFromName(r.equipment) === selectedBrand);
+            }
+            
+            if (filteredReviews.length === 0) {
+                reviewsContainer.innerHTML = `<div class="text-center bg-white p-8 rounded-lg shadow-md"><p class="text-gray-500">Nenhuma avaliação encontrada para os filtros selecionados.</p></div>`; return;
+            }
+
+            const groupedByBrand = filteredReviews.reduce((acc, review) => {
+                const brand = getBrandFromName(review.equipment);
+                if (!acc[brand]) acc[brand] = [];
+                acc[brand].push(review);
+                return acc;
+            }, {});
+
+            for (const brand in groupedByBrand) {
+                const brandContainer = document.createElement('div');
+                brandContainer.innerHTML = `<h2 class="text-3xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-indigo-200">${brand}</h2>`;
+                
+                const reviewsGrid = document.createElement('div');
+                reviewsGrid.className = "space-y-6";
+
+                groupedByBrand[brand].forEach(review => {
+                    reviewsGrid.appendChild(createReviewCard(review));
+                });
+                brandContainer.appendChild(reviewsGrid);
+                reviewsContainer.appendChild(brandContainer);
+            }
+        }
+        
+        function handleFilterChange(filter) {
+            currentFilter = filter;
+            selectedBrand = 'all'; 
+            
+            const racketsBtn = document.getElementById('filter-rackets');
+            const stringsBtn = document.getElementById('filter-strings');
+
+            racketsBtn.classList.toggle('bg-indigo-600', filter === 'racket');
+            racketsBtn.classList.toggle('text-white', filter === 'racket');
+            racketsBtn.classList.toggle('bg-white', filter !== 'racket');
+            racketsBtn.classList.toggle('text-gray-700', filter !== 'racket');
+
+            stringsBtn.classList.toggle('bg-indigo-600', filter === 'string');
+            stringsBtn.classList.toggle('text-white', filter === 'string');
+            stringsBtn.classList.toggle('bg-white', filter !== 'string');
+            stringsBtn.classList.toggle('text-gray-700', filter !== 'string');
+
+            renderBrandFilters();
+            renderReviews();
+        }
+
+        function handleSearchSubmit(e) {
+            e.preventDefault();
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            if (!query) return;
+
+            const specialistResult = specialistReviews.find(sr => sr.equipment.toLowerCase().includes(query));
+            const userResults = allReviews.filter(ur => ur.equipment.toLowerCase().includes(query));
+
+            renderSearchResults(query, specialistResult, userResults);
+        }
+        
+        function renderSearchResults(query, specialistReview, userReviews) {
+            const browseView = document.getElementById('browse-view');
+            const searchView = document.getElementById('search-results-view');
+            
+            browseView.classList.add('hidden');
+            searchView.classList.remove('hidden');
+            searchView.innerHTML = ''; 
+
+            let html = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Resultados para "${query}"</h2>
+                    <button id="back-to-browse-btn" class="bg-white text-gray-700 font-semibold py-2 px-4 rounded-lg shadow hover:bg-gray-100 transition">
+                        &larr; Voltar
+                    </button>
+                </div>
+            `;
+
+            if (specialistReview) {
+                const specsHTML = Object.entries(specialistReview.specs).map(([key, value]) => `<div class="flex justify-between text-sm"><span class="font-semibold text-gray-600">${key}</span><span>${value}</span></div>`).join('');
+                html += `
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-xl shadow-2xl p-8 mb-10">
+                        <h3 class="text-2xl font-bold text-indigo-400 mb-2">Análise do Especialista</h3>
+                        <h4 class="text-xl font-semibold mb-4">${specialistReview.equipment}</h4>
+                        <p class="text-slate-300 mb-6">${specialistReview.summary}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div><h5 class="font-bold mb-2 text-green-400">Prós</h5><ul class="list-disc list-inside space-y-1 text-slate-300">${specialistReview.pros.map(p => `<li>${p}</li>`).join('')}</ul></div>
+                            <div><h5 class="font-bold mb-2 text-red-400">Contras</h5><ul class="list-disc list-inside space-y-1 text-slate-300">${specialistReview.cons.map(c => `<li>${c}</li>`).join('')}</ul></div>
+                            <div><h5 class="font-bold mb-2 text-cyan-400">Especificações</h5><div class="space-y-2">${specsHTML}</div></div>
+                        </div>
+                    </div>`;
+            }
+
+            html += `<h3 class="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-indigo-200">Opiniões da Comunidade (${userReviews.length})</h3>`;
+            
+            if (userReviews.length > 0) {
+                const userReviewsContainer = document.createElement('div');
+                userReviewsContainer.className = 'space-y-6';
+                userReviews.forEach(review => userReviewsContainer.appendChild(createReviewCard(review)));
+                html += userReviewsContainer.innerHTML;
+            } else {
+                html += `<div class="text-center bg-white p-8 rounded-lg shadow-md"><p class="text-gray-500">Nenhuma avaliação de usuários encontrada para este equipamento.</p></div>`;
+            }
+            
+            searchView.innerHTML = html;
+
+            document.getElementById('back-to-browse-btn').addEventListener('click', () => {
+                searchView.classList.add('hidden');
+                browseView.classList.remove('hidden');
+                document.getElementById('search-input').value = '';
+            });
+        }
+        
+        // ========================================================================
+        // LÓGICA DO FINDER DE EQUIPAMENTO
+        // ========================================================================
+        
+        function setFinderMode(mode) {
+            finderMode = mode;
+            const fullBtn = document.getElementById('finder-choice-full');
+            const stringBtn = document.getElementById('finder-choice-string');
+            const subtitle = document.getElementById('finder-subtitle');
+            const currentRacketGroup = document.getElementById('finder-current-racket-group');
+            const racketBrandGroup = document.getElementById('finder-racket-brand-group');
+            const currentRacketInput = document.getElementById('finder-current-racket');
+            const brandSelect = document.getElementById('finder-brand');
+
+            if (mode === 'full') {
+                fullBtn.classList.add('bg-indigo-600', 'text-white');
+                fullBtn.classList.remove('bg-white', 'text-gray-700');
+                stringBtn.classList.add('bg-white', 'text-gray-700');
+                stringBtn.classList.remove('bg-indigo-600', 'text-white');
+                
+                subtitle.textContent = "Responda algumas perguntas e nossa ferramenta irá sugerir a raquete e a corda ideais para o seu jogo.";
+                currentRacketGroup.classList.add('hidden');
+                racketBrandGroup.classList.remove('hidden');
+                currentRacketInput.required = false;
+                brandSelect.required = true;
+
+            } else { // mode === 'string'
+                stringBtn.classList.add('bg-indigo-600', 'text-white');
+                stringBtn.classList.remove('bg-white', 'text-gray-700');
+                fullBtn.classList.add('bg-white', 'text-gray-700');
+                fullBtn.classList.remove('bg-indigo-600', 'text-white');
+
+                subtitle.textContent = "Nos diga mais sobre seu jogo para encontrarmos a corda perfeita para sua raquete atual.";
+                currentRacketGroup.classList.remove('hidden');
+                racketBrandGroup.classList.add('hidden');
+                currentRacketInput.required = true;
+                brandSelect.required = false;
+            }
+        }
+
+        function handleFinderSubmit(e) {
+            e.preventDefault();
+            currentSelection = { rackets: [], strings: [] }; // Reset selection on new search
+            const checkedPainTypes = Array.from(document.querySelectorAll('input[name="pain-type"]:checked')).map(cb => cb.value);
+            const answers = {
+                level: document.getElementById('finder-level').value,
+                style: document.getElementById('finder-style').value,
+                frequency: parseInt(document.getElementById('finder-frequency').value),
+                age: parseInt(document.getElementById('finder-age').value),
+                painTypes: checkedPainTypes,
+                gender: document.querySelector('input[name="finder-gender"]:checked').value,
+                preferredBrand: document.getElementById('finder-brand').value,
+                city: document.getElementById('finder-city').value,
+                tension: parseInt(document.getElementById('finder-tension').value),
+                currentRacket: finderMode === 'string' ? document.getElementById('finder-current-racket').value : null,
+            };
+            const recommendation = getRecommendation(answers, finderMode);
+            renderFinderResults(recommendation, answers, false, finderMode);
+            saveRecommendationToProfile({ recommendation, answers, mode: finderMode, userSelection: null });
+        }
+        
+        function getRecommendation(answers, mode) {
+            let finalRecommendations = { rackets: null, string: null, manufacturer: { string: null }, savedAt: new Date().toISOString() };
+            const fallbackString = { name: "N/A", description: "Não encontramos uma opção ideal. Consulte um especialista." };
+
+            // 1. Lógica para recomendação de cordas (comum a ambos os modos)
+            const scoreString = (string, answers) => {
+                let score = 0;
+                if (answers.painTypes.length > 0) {
+                    score += (string.comfort * 3) - (string.stiffness * 2.5);
+                }
+                switch (answers.style) {
+                    case 'topspin': score += (string.spin * 2) + string.control; break;
+                    case 'flat': score += (string.control * 2) + string.power; break;
+                    case 'all-court': score += string.control + string.power + string.comfort; break;
+                    case 'serve-volley': score += (string.control * 2) + (string.power) + (string.comfort); break; 
+                }
+                return score;
+            };
+
+            const recommendedStrings = {};
+            ['economica', 'intermediaria', 'premium', 'super_premium'].forEach(tier => {
+                const tierStrings = stringsDB.filter(s => s.priceTier === tier);
+                if (tierStrings.length > 0) {
+                    const bestString = tierStrings.sort((a, b) => scoreString(b, answers) - scoreString(a, answers))[0];
+                    recommendedStrings[tier] = bestString;
+                } else {
+                    recommendedStrings[tier] = fallbackString;
+                }
+            });
+            finalRecommendations.string = recommendedStrings;
+
+            // 2. Lógica para recomendação de raquetes (apenas modo 'full')
+            if (mode === 'full') {
+                const fallbackRacket = { name: 'Nenhuma opção encontrada', description: 'Tente refinar sua busca.' };
+                // Filtro base para as recomendações gerais
+                let baseFilteredRacquets = racquetsDB.filter(racket => {
+                    const levelMatch = racket.levels.includes(answers.level);
+                    const genderMatch = racket.gender === answers.gender || racket.gender === 'unisex';
+                    return levelMatch && genderMatch;
+                });
+                if (baseFilteredRacquets.length === 0) baseFilteredRacquets = racquetsDB;
+
+                const getBestRacketForProfile = (racquetList, profileTypes, excludeNames = []) => {
+                    const scored = racquetList
+                        .filter(r => !excludeNames.includes(r.name))
+                        .map(racket => {
+                            let score = 0;
+                            if (profileTypes.some(p => racket.profiles.includes(p))) score += 10;
+                            if (answers.painTypes.length > 0) {
+                                if (racket.stiffnessRA < 64) score += 15;
+                                if (racket.stiffnessRA > 68) score -= 10;
+                            }
+                            return { ...racket, score };
+                        }).sort((a, b) => b.score - a.score);
+                    return scored[0] || null;
+                };
+
+                let racketControl = getBestRacketForProfile(baseFilteredRacquets, ['controle', 'conforto', 'sensacao']);
+                let racketPower = getBestRacketForProfile(baseFilteredRacquets, ['potencia', 'spin'], [racketControl?.name]);
+                let racketBalanced = getBestRacketForProfile(baseFilteredRacquets, ['all-court', 'versatilidade'], [racketControl?.name, racketPower?.name]);
+                
+                let racketPreferredBrand = null;
+                if(answers.preferredBrand !== 'nenhuma') {
+                    const brandFilteredRacquets = racquetsDB.filter(r => r.brand === answers.preferredBrand && r.levels.includes(answers.level) && (r.gender === answers.gender || r.gender === 'unisex'));
+                    if(brandFilteredRacquets.length > 0) {
+                        racketPreferredBrand = getBestRacketForProfile(brandFilteredRacquets, ['controle', 'conforto', 'sensacao', 'potencia', 'spin', 'all-court']);
+                    }
+                }
+
+                finalRecommendations.rackets = { 
+                    racketControl: racketControl || fallbackRacket, 
+                    racketPower: racketPower || fallbackRacket, 
+                    racketBalanced: racketBalanced || fallbackRacket,
+                    racketPreferredBrand: racketPreferredBrand
+                };
+            }
+
+            // 3. Lógica para recomendação do fabricante
+            let targetRacketName = mode === 'full' ? finalRecommendations.rackets?.racketControl?.name : answers.currentRacket;
+            if(targetRacketName) {
+                const matchedRacket = racquetsDB.find(r => r.name.toLowerCase() === targetRacketName.toLowerCase());
+                if (matchedRacket && matchedRacket.recommendedStrings) {
+                    const key = answers.painTypes.length > 0 ? 'comfort' : 'spin';
+                    const recStringName = matchedRacket.recommendedStrings[key];
+                    finalRecommendations.manufacturer.string = stringsDB.find(s => s.name === recStringName) || null;
+                }
+            }
+            
+            return finalRecommendations;
+        }
+
+        function generateRecommendationSummary(answers, recommendation, mode = 'full') {
+            return `<div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 p-6 rounded-lg mb-8 shadow"><h4 class="text-xl font-bold mb-3">Análise da Recomendação</h4><p>Com base em suas respostas, geramos sugestões de equipamentos que equilibram suas necessidades de performance e conforto. Veja abaixo as opções e a recomendação do fabricante para comparação.</p></div>`;
+        }
+        
+        function renderFinderResults(recommendation, answers, isFromProfile = false, mode = 'full') {
+            const form = document.getElementById('finder-form');
+            const resultsContainer = document.getElementById('finder-results');
+            form.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            if (isFromProfile) {
+                mode = answers.mode || 'full';
+                currentSelection = answers.userSelection || { rackets: [], strings: [] };
+            }
+
+            const createRacketCard = (title, racket, isPreferred = false) => {
+                if (!racket || !racket.name || racket.name.includes('Nenhuma opção')) return '';
+                const reviewsForRacket = allReviews.filter(r => r.equipment.toLowerCase() === racket.name.toLowerCase());
+                const hasReviews = reviewsForRacket.length > 0;
+                const availabilityHTML = racket.availability === 'low' ? `<span class="text-xs font-semibold text-red-500" title="Alta procura">🔥</span>` : '';
+                const borderColor = isPreferred ? 'border-indigo-500' : 'border-gray-200';
+                
+                return `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col border-2 ${borderColor}">
+                         <img src="${racket.imageUrl}" alt="${racket.name}" class="w-full h-48 object-contain p-2 bg-white" onerror="this.onerror=null;this.src='https://placehold.co/300x200/F3F4F6/9CA3AF?text=Imagem+Indispon%C3%ADvel';">
+                        <div class="p-4 flex flex-col flex-grow">
+                            <p class="font-semibold ${isPreferred ? 'text-indigo-700' : 'text-gray-800'}">${title}</p>
+                            <p class="text-lg font-bold text-gray-900 my-1">${racket.name} ${availabilityHTML}</p>
+                             <p class="text-xl font-bold text-green-600 my-2">R$ ${racket.priceBRL}</p>
+                            <p class="text-sm text-gray-600 mb-3 flex-grow">${racket.description}</p>
+                            <div class="mt-auto space-y-2">
+                                <button class="add-to-selection-btn bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg text-sm w-full" data-name="${racket.name}" data-type="racket">Adicionar à Seleção</button>
+                                <button class="see-reviews-btn ${hasReviews ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'} text-white font-bold py-2 px-4 rounded-lg text-sm w-full" data-equipment-name="${racket.name}" ${!hasReviews ? 'disabled' : ''}>${hasReviews ? `Ver ${reviewsForRacket.length} Avaliações` : 'Nenhuma Avaliação'}</button>
+                            </div>
+                        </div>
+                    </div>`;
+            };
+
+            let racketsHTML = '';
+            if (mode === 'full' && recommendation.rackets) {
+                const preferredCard = recommendation.rackets.racketPreferredBrand ? createRacketCard('Da sua Marca Preferida', recommendation.rackets.racketPreferredBrand, true) : '';
+                const gridColsClass = preferredCard ? 'lg:grid-cols-4' : 'lg:grid-cols-3';
+
+                racketsHTML = `<div class="mb-10">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Raquetes Sugeridas</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 ${gridColsClass} gap-4">
+                        ${createRacketCard('Controle & Conforto', recommendation.rackets.racketControl)}
+                        ${createRacketCard('Potência & Spin', recommendation.rackets.racketPower)}
+                        ${createRacketCard('Equilibrada', recommendation.rackets.racketBalanced)}
+                        ${preferredCard}
+                    </div>
+                </div>`;
+            }
+
+            const createStringRow = (title, string) => {
+                if (!string || !string.name || string.name === 'N/A') return '';
+                return `
+                    <div class="grid grid-cols-7 gap-4 items-center p-3 border-b last:border-b-0">
+                        <div class="font-semibold text-indigo-700">${title}</div>
+                        <div class="col-span-2">
+                            <p class="font-bold text-gray-800">${string.name}</p>
+                            <p class="text-xs text-gray-600">${string.description}</p>
+                             <button class="show-similar-btn text-xs text-indigo-500 hover:underline mt-1" data-string-name="${string.name}">Ver similares</button>
+                        </div>
+                        <div class="text-center text-sm"><span class="font-medium">Potência:</span> ${string.power}/10</div>
+                        <div class="text-center text-sm"><span class="font-medium">Conforto:</span> ${string.comfort}/10</div>
+                        <div class="text-center text-sm"><span class="font-medium">Spin:</span> ${string.spin}/10</div>
+                        <div class="text-center">
+                            <button class="add-to-selection-btn bg-indigo-100 text-indigo-700 text-xs font-bold py-1 px-2 rounded-md hover:bg-indigo-200" data-name="${string.name}" data-type="string">Add</button>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const manufacturerRec = recommendation.manufacturer.string;
+            const profileRecIntermediate = recommendation.string.intermediaria;
+            let comparativeHTML = '';
+            if(manufacturerRec && profileRecIntermediate && manufacturerRec.name !== profileRecIntermediate.name) {
+                comparativeHTML = `<div class="mt-6 bg-gray-100 p-4 rounded-lg">
+                    <h5 class="font-bold text-center text-gray-800 mb-2">Análise Comparativa</h5>
+                    <p class="text-sm text-center text-gray-700">A corda recomendada para seu perfil, <strong>${profileRecIntermediate.name}</strong>, foca em ${answers.painTypes.length > 0 ? 'maximizar o conforto (nota ' + profileRecIntermediate.comfort + '/10)' : 'otimizar o spin (nota ' + profileRecIntermediate.spin + '/10)'}. Já a recomendação do fabricante, <strong>${manufacturerRec.name}</strong>, oferece uma experiência mais equilibrada (Conforto ${manufacturerRec.comfort}/10, Spin ${manufacturerRec.spin}/10), sendo uma ótima alternativa. </p>
+                </div>`;
+            }
+            
+            const stringsHTML = `
+                <div class="bg-white p-6 rounded-lg border shadow-md">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Cordas Sugeridas</h3>
+                    <div class="text-sm font-semibold text-gray-500 grid grid-cols-7 gap-4 p-3 bg-gray-50 rounded-t-lg">
+                        <div>Faixa de Preço</div>
+                        <div class="col-span-2">Corda e Descrição</div>
+                        <div class="text-center">Potência</div>
+                        <div class="text-center">Conforto</div>
+                        <div class="text-center">Spin</div>
+                        <div class="text-center">Ação</div>
+                    </div>
+                    ${createStringRow('Super Premium', recommendation.string.super_premium)}
+                    ${createStringRow('Premium', recommendation.string.premium)}
+                    ${createStringRow('Intermediária', recommendation.string.intermediaria)}
+                    ${createStringRow('Econômica', recommendation.string.economica)}
+                    ${manufacturerRec ? createStringRow('Fabricante', manufacturerRec) : ''}
+                    ${comparativeHTML}
+                </div>`;
+            
+            const selectionGroupHTML = `
+                 <div id="selection-group" class="mt-12 bg-indigo-50 border border-indigo-200 p-6 rounded-lg shadow-lg hidden">
+                    <h3 class="text-2xl font-bold text-indigo-800 mb-4 text-center">Sua Seleção para Cotação</h3>
+                    <div id="selection-list" class="space-y-2"></div>
+                    <div class="text-center mt-6">
+                        <button class="selection-group-stores-btn bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 transition">Ver Lojas Parceiras com esta Seleção</button>
+                    </div>
+                </div>
+            `;
+
+            resultsContainer.innerHTML = `
+                <div class="text-center"><h3 class="text-3xl font-bold text-gray-900 mb-2">Sua Recomendação</h3><p class="text-gray-600 mb-8">Baseado em suas respostas, estas são nossas sugestões.</p></div>
+                ${generateRecommendationSummary(answers, recommendation, mode)}
+                ${racketsHTML}
+                ${stringsHTML}
+                ${selectionGroupHTML}
+                <div class="text-center mt-8"><button id="finder-reset-btn" class="bg-slate-700 text-white font-bold py-3 px-8 rounded-lg">&larr; ${isFromProfile ? 'Voltar ao Perfil' : 'Refazer Teste'}</button></div>`;
+            
+            updateSelectionButtonsUI();
+            renderSelectionGroup();
+            
+            document.getElementById('finder-reset-btn').addEventListener('click', () => { isFromProfile ? showProfile() : (resultsContainer.classList.add('hidden'), document.getElementById('partner-stores-view').classList.add('hidden'), form.classList.remove('hidden'), form.reset()); });
+            document.querySelectorAll('.see-reviews-btn').forEach(btn => btn.addEventListener('click', (e) => { const name = e.currentTarget.dataset.equipmentName; showForum(); document.getElementById('search-input').value = name; searchForm.dispatchEvent(new Event('submit')); }));
+        }
+
+        function renderPartnerStoresForSelection(userCity) {
+            const equipmentList = [...currentSelection.rackets, ...currentSelection.strings].join(', ');
+            renderPartnerStores(null, userCity, equipmentList);
+        }
+
+        function renderPartnerStores(equipmentType, userCity, equipmentName, recommendation) {
+            const resultsContainer = document.getElementById('finder-results');
+            const storesContainer = document.getElementById('partner-stores-view');
+            resultsContainer.classList.add('hidden');
+            storesContainer.classList.remove('hidden');
+            
+            const localStores = partnerStores.filter(store => store.type === 'physical' && store.city.toLowerCase() === userCity.trim().toLowerCase());
+            const onlineStores = partnerStores.filter(store => store.type === 'virtual');
+
+            const fullMessage = encodeURIComponent(`Olá! Vi uma recomendação na Rackfy e tenho interesse em "${equipmentName}". Vocês podem me ajudar?`);
+            
+            const createStoreCardHTML = (store) => `
+                <div class="bg-gray-100 p-4 rounded-lg"><div class="flex items-start gap-4">
+                    <img src="${store.logo}" alt="${store.name}" class="h-12 rounded-md mt-1">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-lg">${store.name}</h4><p class="text-sm text-gray-600">${store.address}</p><p class="text-sm text-gray-800 mt-2">${store.description}</p>
+                        <div class="text-xs mt-2 flex gap-4"><span><strong>Disponibilidade:</strong> ${store.availability}</span><span><strong>Entrega:</strong> ${store.deliveryTime}</span></div>
+                    </div>
+                </div><div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <a href="mailto:${store.contact}?subject=Contato via Rackfy" class="contact-email-btn flex items-center justify-center text-center bg-white border border-gray-300 font-semibold py-2 px-4 rounded-lg text-sm hover:bg-gray-100">E-mail</a>
+                    <a href="https://wa.me/${store.whatsapp}?text=${fullMessage}" target="_blank" class="contact-whatsapp-btn flex items-center justify-center text-center bg-green-500 text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-green-600">WhatsApp</a>
+                    <button class="allow-contact-btn bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-indigo-700" data-store-id="${store.id}" data-store-name="${store.name}" data-equipment-name="${equipmentName}"><span>Permitir Contato</span></button>
+                </div></div>`;
+
+            let localStoresHTML = localStores.length > 0 ? `<h4 class="text-xl font-bold mb-4">Lojas em ${userCity}</h4><div class="space-y-4">${localStores.map(createStoreCardHTML).join('')}</div>` : `<div class="bg-gray-100 p-4 rounded-lg text-center"><p>Nenhuma loja parceira encontrada em sua cidade. Confira as opções online.</p></div>`;
+            const onlineStoresHTML = `<h4 class="text-xl font-bold mt-8 mb-4">Lojas Online</h4><div class="space-y-4">${onlineStores.map(createStoreCardHTML).join('')}</div>`;
+
+            storesContainer.innerHTML = `<div class="text-center"><h3 class="text-3xl font-bold mb-2">Lojas Parceiras</h3><p class="text-gray-600 mb-6">Interessado em <span class="font-semibold">${equipmentName}</span>?</p></div>${localStoresHTML}${onlineStoresHTML}<div class="text-center mt-8"><button id="back-to-results-btn" class="bg-slate-700 text-white font-bold py-3 px-8 rounded-lg">&larr; Voltar</button></div>`;
+            
+            document.querySelectorAll('.allow-contact-btn').forEach(btn => btn.addEventListener('click', handleAllowContact));
+            document.getElementById('back-to-results-btn').addEventListener('click', () => { storesContainer.classList.add('hidden'); resultsContainer.classList.remove('hidden'); });
+        }
+        
+        async function handleAllowContact(e) {
+            if (!currentUser) { authModal.classList.remove('hidden'); return; }
+            const btn = e.currentTarget;
+            showLoading(btn);
+            try {
+                await addDoc(collection(db, `/artifacts/${appId}/public/data/leads`), {
+                    userId: userId, userName: currentUser.name, userEmail: currentUser.email,
+                    interestedEquipment: btn.dataset.equipmentName, storeId: btn.dataset.storeId,
+                    storeName: btn.dataset.storeName, createdAt: serverTimestamp(), status: 'new_permission'
+                });
+                btn.disabled = true;
+                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                btn.classList.add('bg-green-600', 'cursor-not-allowed');
+                hideLoading(btn, 'Permissão Concedida!');
+                showToast(`Sua solicitação foi enviada para ${btn.dataset.storeName}!`);
+                saveCurrentSelectionToLatestRecommendation();
+            } catch(error) {
+                hideLoading(btn, 'Permitir Contato');
+                showToast(`Erro ao notificar a loja.`, 'error');
+            }
+        }
+        
+        // ========================================================================
+        // FUNÇÕES DE NAVEGAÇÃO E SUBMISSÃO
+        // ========================================================================
+        
+        function navigateTo(sectionId) {
+            ['forum-section', 'finder-section', 'profile-section'].forEach(id => {
+                const section = document.getElementById(id);
+                if (id === sectionId) {
+                    section.classList.remove('hidden');
+                } else {
+                    section.classList.add('hidden');
+                }
+            });
+        }
+
+        function showForum() { navigateTo('forum-section'); }
+        function showFinder() {
+            navigateTo('finder-section');
+            if(currentUser && currentUser.city) {
+                document.getElementById('finder-city').value = currentUser.city;
+            }
+        }
+
+        // ========================================================================
+        // FUNÇÕES DE AVALIAÇÃO (MODAL, DELETE, EDIT)
+        // ========================================================================
+
+        function openReviewModalForCreate() {
+            const modal = document.getElementById('review-modal');
+            const form = document.getElementById('review-form');
+            const title = document.getElementById('review-modal-title');
+            const imagePreview = document.getElementById('review-image-preview');
+
+            form.reset();
+            form.querySelector('#review-form-edit-id').value = '';
+            title.textContent = 'Compartilhe sua Avaliação';
+            imagePreview.classList.add('hidden');
+            imagePreview.src = '';
+            modal.classList.remove('hidden');
+        }
+
+        function openReviewModalForEdit(reviewId) {
+            const review = allReviews.find(r => r.id === reviewId);
+            if (!review) {
+                showToast('Avaliação não encontrada.', 'error');
+                return;
+            }
+
+            const modal = document.getElementById('review-modal');
+            const form = document.getElementById('review-form');
+            const title = document.getElementById('review-modal-title');
+            const imagePreview = document.getElementById('review-image-preview');
+
+            form.reset();
+            title.textContent = 'Editar sua Avaliação';
+
+            form.querySelector('#review-form-edit-id').value = review.id;
+            form.querySelector(`input[name="equipment-type"][value="${review.type}"]`).checked = true;
+            form.querySelector('#equipment-name').value = review.equipment;
+            form.querySelector('#rating').value = review.rating;
+            form.querySelector('#review-text').value = review.text;
+
+            if (review.imageUrl) {
+                imagePreview.src = review.imageUrl;
+                imagePreview.classList.remove('hidden');
+            } else {
+                imagePreview.classList.add('hidden');
+                imagePreview.src = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+        
+        async function handleDeleteReview(reviewId) {
+            const reviewToDelete = allReviews.find(r => r.id === reviewId);
+            if (!reviewToDelete) {
+                showToast('Avaliação não encontrada.', 'error');
+                return;
+            }
+
+            try {
+                if (reviewToDelete.imageUrl) {
+                    try {
+                         const imageRef = ref(storage, reviewToDelete.imageUrl);
+                         await deleteObject(imageRef);
+                    } catch (storageError) {
+                        console.error("Não foi possível excluir a imagem do Storage:", storageError);
+                    }
+                }
+
+                const reviewRef = doc(db, `/artifacts/${appId}/public/data/reviews/${reviewId}`);
+                await deleteDoc(reviewRef);
+                
+                showToast('Avaliação excluída com sucesso!');
+                if (!profileSection.classList.contains('hidden')) {
+                    renderMyPublications();
+                }
+            } catch (error) {
+                console.error("Erro ao excluir avaliação:", error);
+                showToast('Erro ao excluir avaliação. Tente novamente.', 'error');
+            }
+        }
+        
+        async function handleDeleteComment(reviewId, commentIndex) {
+            const reviewRef = doc(db, `/artifacts/${appId}/public/data/reviews/${reviewId}`);
+            try {
+                const reviewSnap = await getDoc(reviewRef);
+                if (!reviewSnap.exists()) {
+                    showToast('Avaliação não encontrada.', 'error');
+                    return;
+                }
+
+                const reviewData = reviewSnap.data();
+                const commentToDelete = reviewData.comments[commentIndex];
+                
+                if (!commentToDelete) {
+                    showToast('Comentário não encontrado.', 'error');
+                    return;
+                }
+
+                await updateDoc(reviewRef, {
+                    comments: arrayRemove(commentToDelete)
+                });
+
+                showToast('Comentário excluído com sucesso!');
+                if (!profileSection.classList.contains('hidden')) {
+                    renderMyPublications();
+                }
+            } catch (error) {
+                console.error("Erro ao excluir comentário:", error);
+                showToast('Erro ao excluir comentário.', 'error');
+            }
+        }
+
+        // ========================================================================
+        // FUNÇÕES DE SUBMISSÃO DE FORMULÁRIOS
+        // ========================================================================
+
+        async function handleReviewFormSubmit(e) { 
+            e.preventDefault(); 
+            if (!currentUser) { showToast('Você precisa estar logado para avaliar.', 'error'); return; }
+            const btn = document.getElementById('submit-review-btn');
+            const form = document.getElementById('review-form');
+            const editId = form.querySelector('#review-form-edit-id').value;
+            showLoading(btn);
+            try {
+                const imageInput = document.getElementById('review-image-input');
+                let imageUrl = document.getElementById('review-image-preview').src;
+                let isNewImage = false;
+
+                if (imageInput.files[0]) {
+                    isNewImage = true;
+                    const file = imageInput.files[0];
+                    const storageRef = ref(storage, `reviews/${userId}/${Date.now()}_${file.name}`);
+                    const uploadResult = await uploadString(storageRef, imageUrl, 'data_url');
+                    imageUrl = await getDownloadURL(uploadResult.ref);
+                }
+
+                let authorRacket = currentUser.racket || '';
+                let authorString = '';
+                let authorTension = '';
+                if (currentUser.stringingProfile && Array.isArray(currentUser.stringingProfile)) {
+                    const mainRacketRecord = currentUser.stringingProfile.find(record => record.isMain);
+                    if (mainRacketRecord) {
+                        authorRacket = mainRacketRecord.racketName;
+                        authorString = mainRacketRecord.stringName;
+                        authorTension = mainRacketRecord.tension;
+                    }
+                }
+
+                const reviewData = { 
+                    type: form['equipment-type'].value, 
+                    equipment: document.getElementById('equipment-name').value, 
+                    rating: parseInt(document.getElementById('rating').value), 
+                    text: document.getElementById('review-text').value, 
+                    authorId: userId, 
+                    authorName: currentUser.name,
+                    authorPhotoURL: currentUser.photoURL || null,
+                    authorLevel: currentUser.level || '',
+                    authorRacket: authorRacket,
+                    authorString: authorString,
+                    authorTension: authorTension,
+                    lastUpdatedAt: serverTimestamp(),
+                }; 
+
+                if (imageUrl && (isNewImage || !editId)) {
+                    reviewData.imageUrl = imageUrl;
+                }
+
+                if (editId) {
+                    const reviewRef = doc(db, `/artifacts/${appId}/public/data/reviews/${editId}`);
+                    await updateDoc(reviewRef, reviewData);
+                    showToast('Avaliação atualizada com sucesso!');
+                } else {
+                    reviewData.createdAt = serverTimestamp();
+                    reviewData.comments = [];
+                    await addDoc(collection(db, `/artifacts/${appId}/public/data/reviews`), reviewData);
+                    showToast('Avaliação publicada com sucesso!');
+                }
+                
+                form.reset();
+                document.getElementById('review-image-preview').classList.add('hidden');
+                document.getElementById('review-modal').classList.add('hidden');
+                if (!profileSection.classList.contains('hidden')) {
+                     renderMyPublications();
+                }
+            } catch (error) {
+                console.error("Erro ao publicar avaliação:", error);
+                if (error.code && (error.code.includes('storage/unauthorized') || error.code.includes('permission-denied'))) {
+                    showToast('Erro de permissão. Verifique as Regras de Segurança.', 'error');
+                } else if (error.message.includes('CORS')) {
+                     showToast('Erro de CORS. Configure o Storage do Firebase.', 'error');
+                }else {
+                    showToast('Erro ao publicar. Verifique o console para detalhes.', 'error');
+                }
+            } finally {
+                hideLoading(btn, 'Publicar');
+            }
+        }
+
+        async function handleProfileFormSubmit(e) { 
+            e.preventDefault(); 
+            if (!currentUser) return;
+            const btn = document.getElementById('submit-profile-btn');
+            showLoading(btn);
+            try {
+                const profileData = { 
+                    name: document.getElementById('profile-form-name').value,
+                    level: document.getElementById('profile-form-level').value, 
+                    racket: document.getElementById('profile-form-racket').value, 
+                    frequency: document.getElementById('profile-form-frequency').value, 
+                    age: parseInt(document.getElementById('profile-form-age').value),
+                    city: document.getElementById('profile-form-city').value
+                }; 
+                const userRef = doc(db, `/artifacts/${appId}/users/${userId}`); 
+                await setDoc(userRef, profileData, { merge: true }); 
+                currentUser = { ...currentUser, ...profileData }; 
+                document.getElementById('profile-modal').classList.add('hidden'); 
+                showProfile();
+                showToast('Perfil atualizado!');
+            } catch (error) {
+                 console.error("Erro ao salvar perfil:", error);
+                showToast('Erro ao salvar. Tente novamente.', 'error');
+            } finally {
+                hideLoading(btn, 'Salvar Perfil');
+            }
+        }
+
+        async function handleStringUpdateSubmit(e) { 
+            e.preventDefault(); 
+            if (!currentUser) return;
+            const btn = document.getElementById('submit-stringing-btn');
+            showLoading(btn);
+            try {
+                const form = e.target;
+                const recordIndex = form.querySelector('#string-form-record-index').value;
+                const currentProfile = Array.isArray(currentUser.stringingProfile) ? [...currentUser.stringingProfile] : [];
+                let isMain = (recordIndex !== '' && currentProfile[parseInt(recordIndex)]?.isMain) || (recordIndex === '' && currentProfile.length === 0);
+
+                const updatedRecord = {
+                    racketName: form.querySelector('#string-form-racket-name').value,
+                    stringName: form.querySelector('#string-form-string-name').value,
+                    stringType: form.querySelector('#string-form-type').value,
+                    tension: form.querySelector('#string-form-tension').value,
+                    date: form.querySelector('#string-form-date').value,
+                    isMain: isMain
+                };
+
+                if (recordIndex !== '') currentProfile[parseInt(recordIndex)] = updatedRecord;
+                else currentProfile.push(updatedRecord);
+
+                const userRef = doc(db, `/artifacts/${appId}/users/${userId}`); 
+                await setDoc(userRef, { stringingProfile: currentProfile }, { merge: true }); 
+                currentUser.stringingProfile = currentProfile;
+                document.getElementById('string-modal').classList.add('hidden'); 
+                showProfile();
+                showToast('Encordoamento salvo com sucesso!');
+            } catch (error) {
+                console.error("Erro ao salvar encordoamento:", error);
+                showToast('Erro ao salvar.', 'error');
+            } finally {
+                hideLoading(btn, 'Salvar');
+            }
+        }
+
+        async function handleCommentSubmit(e) {
+            e.preventDefault();
+            if (!currentUser) { authModal.classList.remove('hidden'); return; }
+
+            const btn = e.target.querySelector('.comment-submit-btn');
+            showLoading(btn);
+            try {
+                const form = e.target;
+                const reviewId = form.dataset.reviewId;
+                const textarea = form.querySelector('.comment-input');
+                const commentText = textarea.value.trim();
+                if (!commentText) return;
+
+                const newComment = {
+                    authorId: userId,
+                    authorName: currentUser.name, 
+                    authorPhotoURL: currentUser.photoURL || null,
+                    text: commentText, 
+                    createdAt: new Date().toISOString()
+                };
+
+                const reviewRef = doc(db, `/artifacts/${appId}/public/data/reviews/${reviewId}`);
+                await updateDoc(reviewRef, { comments: arrayUnion(newComment) });
+                textarea.value = '';
+                showToast('Comentário adicionado!');
+            } catch(error) {
+                console.error("Erro ao adicionar comentário:", error);
+                showToast('Erro ao comentar.', 'error');
+            } finally {
+                hideLoading(btn, 'Comentar');
+            }
+        }
+        
+        function openStringModal(recordIndex = null) {
+            const modal = document.getElementById('string-modal');
+            const form = document.getElementById('string-form');
+            const title = document.getElementById('string-modal-title');
+            form.reset();
+            
+            if (recordIndex !== null && currentUser.stringingProfile && currentUser.stringingProfile[recordIndex]) {
+                title.textContent = "Editar Encordoamento";
+                const record = currentUser.stringingProfile[recordIndex];
+                form.querySelector('#string-form-record-index').value = recordIndex;
+                form.querySelector('#string-form-racket-name').value = record.racketName;
+                form.querySelector('#string-form-string-name').value = record.stringName;
+                form.querySelector('#string-form-type').value = record.stringType;
+                form.querySelector('#string-form-tension').value = record.tension;
+                form.querySelector('#string-form-date').value = record.date;
+            } else {
+                title.textContent = "Adicionar Encordoamento";
+                form.querySelector('#string-form-record-index').value = '';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        async function handleShareEquipmentToggle(e) {
+            const isChecked = e.target.checked;
+            const userRef = doc(db, `/artifacts/${appId}/users/${userId}`); 
+            try {
+                await setDoc(userRef, { shareEquipment: isChecked }, { merge: true });
+                currentUser.shareEquipment = isChecked;
+                showToast('Preferência de compartilhamento salva!');
+            } catch(error) {
+                console.error("Erro ao salvar preferência:", error);
+                showToast('Erro ao salvar preferência.', 'error');
+                e.target.checked = !isChecked;
+            }
+        }
+
+        async function handleSetMainRacket(selectedIndex) {
+            if (!currentUser || !Array.isArray(currentUser.stringingProfile)) return;
+            const updatedProfile = currentUser.stringingProfile.map((record, index) => ({ ...record, isMain: index === selectedIndex }));
+            currentUser.stringingProfile = updatedProfile; 
+            showProfile(); 
+
+            const userRef = doc(db, `/artifacts/${appId}/users/${userId}`);
+            try {
+                await setDoc(userRef, { stringingProfile: updatedProfile }, { merge: true });
+                showToast('Equipamento principal atualizado!');
+            } catch (error) {
+                console.error("Erro ao definir equipamento principal:", error);
+                showToast('Erro ao salvar.', 'error');
+            }
+        }
+
+        async function handleDeleteStringing(selectedIndex) {
+            if (!currentUser || !Array.isArray(currentUser.stringingProfile)) return;
+            
+            const updatedProfile = currentUser.stringingProfile.filter((_, index) => index !== selectedIndex);
+            const wasMain = currentUser.stringingProfile[selectedIndex]?.isMain;
+            
+            if (wasMain && updatedProfile.length > 0) {
+                 updatedProfile[0].isMain = true;
+            }
+
+            const userRef = doc(db, `/artifacts/${appId}/users/${userId}`);
+            try {
+                await setDoc(userRef, { stringingProfile: updatedProfile }, { merge: true });
+                currentUser.stringingProfile = updatedProfile;
+                showToast('Encordoamento excluído com sucesso!');
+                showProfile();
+            } catch (error) {
+                console.error("Erro ao excluir encordoamento:", error);
+                showToast('Erro ao excluir. Tente novamente.', 'error');
+            }
+        }
+
+        function renderMyPublications() {
+            const container = document.getElementById('my-publications-view');
+            if (!currentUser || !container) return;
+
+            const myReviews = allReviews.filter(r => r.authorId === userId);
+
+            if (myReviews.length === 0) {
+                container.innerHTML = `<p class="text-gray-500">Você ainda não fez nenhuma publicação.</p>`;
+                return;
+            }
+
+            container.innerHTML = myReviews.map(review => {
+                const stars = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+                const date = review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString('pt-BR') : 'Data indisponível';
+                
+                return `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold">${review.equipment} <span class="font-normal text-gray-600">- ${stars}</span></p>
+                            <p class="text-sm text-gray-700 mt-1">${review.text}</p>
+                            <p class="text-xs text-gray-500 mt-2">Publicado em: ${date}</p>
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <button class="edit-review-btn text-sm text-indigo-600 font-semibold" data-review-id="${review.id}">Editar</button>
+                            <button class="delete-review-btn text-sm text-red-600 font-semibold ml-2" data-review-id="${review.id}">Excluir</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function showProfile() {
+            if (!currentUser) { authModal.classList.remove('hidden'); return; }
+            navigateTo('profile-section');
+            const user = currentUser;
+            const isGoogleLinked = user.providerData?.some(p => p.providerId === 'google.com');
+            const linkAccountButton = !isGoogleLinked ? `<div class="mt-8"><button id="link-google-btn" class="w-full flex items-center justify-center gap-2 bg-blue-500 text-white font-semibold py-3 px-5 rounded-lg hover:bg-blue-600">Vincular Conta do Google</button></div>` : '';
+            
+            let stringerHTML = '';
+            if (user.stringingProfile && user.stringingProfile.length > 0) {
+                 const cardsHTML = user.stringingProfile.map((record, index) => {
+                    const { nextChangeDate, status, progress } = calculateNextStringChange(record, user.frequency);
+                    let statusBarColor = 'bg-green-500';
+                    if (status === 'Troca próxima') statusBarColor = 'bg-yellow-500';
+                    if (status === 'Troca recomendada!') statusBarColor = 'bg-red-500';
+
+                    return `
+                        <div class="bg-indigo-50 p-6 rounded-lg">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-lg font-bold text-indigo-800 flex items-center gap-2">${record.racketName} ${record.isMain ? '<span class="text-xs font-medium bg-indigo-200 text-indigo-800 py-0.5 px-2 rounded-full">Principal</span>' : ''}</h4>
+                                <div>
+                                    ${!record.isMain ? `<button class="set-main-racket-btn text-sm text-indigo-600 font-semibold hover:text-indigo-800 mr-2" data-index="${index}">Tornar Principal</button>` : ''}
+                                    <button class="edit-stringing-btn text-sm text-gray-600 font-semibold hover:text-gray-800" data-index="${index}">Editar</button>
+                                    <button class="delete-stringing-btn text-sm text-red-600 font-semibold hover:text-red-800 ml-2" data-index="${index}">Excluir</button>
+                                </div>
+                            </div>
+                            <div class="space-y-3 mt-4">
+                                <div class="flex justify-between"><span class="font-semibold text-gray-600">Corda:</span><span>${record.stringName} (${record.tension} lbs)</span></div>
+                                <div class="flex justify-between"><span class="font-semibold text-gray-600">Última Troca:</span><span>${new Date(record.date + 'T12:00:00Z').toLocaleDateString('pt-BR')}</span></div>
+                                <div class="flex justify-between"><span class="font-semibold text-gray-600">Próxima Troca:</span><span class="font-bold text-indigo-700">${nextChangeDate.toLocaleDateString('pt-BR')}</span></div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Durabilidade da Corda</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="${statusBarColor} h-2.5 rounded-full" style="width: ${progress}%"></div></div>
+                                <p class="text-xs text-right text-gray-500 mt-1">${status}</p>
+                            </div>
+                        </div>`;
+                }).join('');
+                 stringerHTML = `<div class="mt-8"><h3 class="text-xl font-bold text-indigo-800 mb-4">Meus Encordoamentos</h3><div class="space-y-4">${cardsHTML}</div></div>`;
+            } else {
+                 stringerHTML = `<div class="bg-indigo-50 p-6 rounded-lg mt-8 text-center"><p class="text-indigo-800">Nenhum encordoamento cadastrado.</p></div>`
+            }
+            
+            let recommendationsHTML = '';
+            if (user.recommendations && user.recommendations.length > 0) {
+                 const recCards = user.recommendations.map((recData, index) => {
+                    const date = new Date(recData.recommendation.savedAt).toLocaleDateString('pt-BR');
+                    let mainItem = "Recomendação";
+                    if(recData.mode === 'string') {
+                        mainItem = `Corda para ${recData.answers.currentRacket}`;
+                    } else if (recData.recommendation.rackets && recData.recommendation.rackets.racketControl) {
+                        mainItem = `Raquete: ${recData.recommendation.rackets.racketControl.name}`;
+                    }
+                    if(recData.userSelection && (recData.userSelection.rackets.length > 0 || recData.userSelection.strings.length > 0)) {
+                        mainItem += ` (Seleção Salva)`;
+                    }
+
+                    return `<div class="bg-gray-50 p-4 rounded-lg border"><p class="font-semibold">Consulta de ${date}</p><p class="text-sm text-gray-600">${mainItem}</p><button class="view-recommendation-btn mt-2 text-sm text-indigo-600 font-semibold" data-index="${index}">Ver Detalhes &raquo;</button></div>`
+                }).join('');
+                 recommendationsHTML = `<div class="mt-8 pt-6 border-t"><h3 class="text-xl font-bold text-indigo-800 mb-4">Minhas Consultas Salvas</h3><div class="space-y-4">${recCards}</div></div>`;
+            }
+
+            const publicationsHTML = `<div class="mt-8 pt-6 border-t">
+                <h3 class="text-xl font-bold text-indigo-800 mb-4">Minhas Publicações</h3>
+                <div id="my-publications-view" class="space-y-4">
+                    <p class="text-gray-500">Carregando publicações...</p>
+                </div>
+            </div>`;
+
+            profileSection.innerHTML = `<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+                <div class="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+                    <div class="relative group">
+                        <img id="profile-picture" src="${user.photoURL || `https://placehold.co/128x128/C7D2FE/312E81?text=${(user.name || 'U').charAt(0)}`}" alt="Foto" class="w-32 h-32 rounded-full flex-shrink-0 border-4 border-white shadow-md">
+                        <label for="profile-image-input" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 rounded-full cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg></label>
+                         <input type="file" id="profile-image-input" class="hidden" accept="image/*">
+                    </div>
+                    <div class="flex-grow w-full">
+                        <div class="flex justify-between items-start">
+                            <div><h2 class="text-3xl font-bold text-gray-900">${user.name}</h2><p class="text-gray-500">${user.email}</p></div>
+                            <button id="open-profile-modal-btn-page" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm">Editar Perfil</button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left mt-6">
+                            <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm font-semibold text-gray-500">Nível</p><p class="text-lg">${user.level||'N/A'}</p></div>
+                            <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm font-semibold text-gray-500">Raquete</p><p class="text-lg">${user.racket||'N/A'}</p></div>
+                            <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm font-semibold text-gray-500">Frequência</p><p class="text-lg">${user.frequency||'N/A'}</p></div>
+                            <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm font-semibold text-gray-500">Idade</p><p class="text-lg">${user.age||'N/A'}</p></div>
+                            <div class="bg-gray-50 p-4 rounded-lg sm:col-span-2"><p class="text-sm font-semibold text-gray-500">Cidade</p><p class="text-lg">${user.city||'N/A'}</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-6 border-t"><h3 class="text-xl font-bold text-indigo-800 mb-4">Preferências</h3><label class="flex items-center cursor-pointer"><input type="checkbox" id="profile-share-equipment-toggle" class="form-checkbox h-5 w-5 text-indigo-600 rounded" ${user.shareEquipment ? 'checked': ''}><span class="ml-3 text-gray-700">Tornar meu equipamento público no fórum.</span></label></div>
+                ${stringerHTML}
+                <div class="mt-6 text-center"><button id="add-stringing-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg">Adicionar Encordoamento</button></div>
+                ${recommendationsHTML} 
+                ${publicationsHTML}
+                ${linkAccountButton}
+            </div>`;
+            
+            renderMyPublications();
+            document.getElementById('open-profile-modal-btn-page').addEventListener('click', () => { 
+                document.getElementById('profile-form-name').value = currentUser.name || '';
+                document.getElementById('profile-form-level').value = currentUser.level || '';
+                document.getElementById('profile-form-racket').value = currentUser.racket || '';
+                document.getElementById('profile-form-frequency').value = currentUser.frequency || '';
+                document.getElementById('profile-form-age').value = currentUser.age || '';
+                document.getElementById('profile-form-city').value = currentUser.city || '';
+                document.getElementById('profile-modal').classList.remove('hidden'); 
+            });
+            document.getElementById('add-stringing-btn').addEventListener('click', () => openStringModal());
+            document.querySelectorAll('.edit-stringing-btn').forEach(btn => btn.addEventListener('click', (e) => openStringModal(e.currentTarget.dataset.index)));
+            
+            document.querySelectorAll('.delete-stringing-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const indexToDelete = parseInt(e.currentTarget.dataset.index);
+                const racketName = currentUser.stringingProfile[indexToDelete]?.racketName || 'este encordoamento';
+                confirmAction(`Tem certeza que deseja excluir o registro de ${racketName}?`, () => {
+                    handleDeleteStringing(indexToDelete);
+                });
+            }));
+
+            document.querySelectorAll('.set-main-racket-btn').forEach(btn => btn.addEventListener('click', (e) => handleSetMainRacket(parseInt(e.currentTarget.dataset.index))));
+            document.querySelectorAll('.view-recommendation-btn').forEach(btn => btn.addEventListener('click', (e) => { const i = parseInt(e.target.dataset.index); const d = currentUser.recommendations[i]; if(d){ showFinder(); renderFinderResults(d.recommendation, d.answers, true); } }));
+            document.getElementById('profile-share-equipment-toggle').addEventListener('change', handleShareEquipmentToggle);
+            document.getElementById('profile-image-input').addEventListener('change', (e) => handleImagePreview(e, 'profile-picture', true));
+            if (!isGoogleLinked) document.getElementById('link-google-btn')?.addEventListener('click', linkGoogleAccount);
+            
+            document.getElementById('my-publications-view').addEventListener('click', (e) => {
+                if (e.target.matches('.delete-review-btn')) {
+                    const reviewId = e.target.dataset.reviewId;
+                    confirmAction('Tem certeza que deseja excluir esta avaliação?', () => handleDeleteReview(reviewId));
+                } else if (e.target.matches('.edit-review-btn')) {
+                    const reviewId = e.target.dataset.reviewId;
+                    openReviewModalForEdit(reviewId);
+                } else if (e.target.matches('.delete-comment-btn')) {
+                    const reviewId = e.target.dataset.reviewId;
+                    const commentIndex = parseInt(e.target.dataset.commentIndex);
+                    confirmAction('Tem certeza que deseja excluir este comentário?', () => handleDeleteComment(reviewId, commentIndex));
+                }
+            });
+        }
+
+        function calculateNextStringChange(record, frequencyString) {
+            const frequencyMatch = frequencyString?.match(/\d+/);
+            const frequency = frequencyMatch ? parseInt(frequencyMatch[0]) : 1;
+            const lastStringDate = new Date(record.date + 'T12:00:00Z');
+            const lifespanHours = (record.stringType || 'polyester') === 'polyester' ? 20 : 40;
+            const daysUntilChange = Math.round((lifespanHours / (frequency * 1.5)) * 7);
+            const nextChangeDate = new Date(lastStringDate);
+            nextChangeDate.setDate(lastStringDate.getDate() + daysUntilChange);
+            const daysRemaining = (nextChangeDate - new Date()) / 86400000;
+            let status = 'OK';
+            if (daysRemaining <= 0) status = 'Troca recomendada!';
+            else if (daysRemaining <= 7) status = 'Troca próxima';
+            const progress = Math.max(0, Math.min(100, ((daysUntilChange - daysRemaining) / daysUntilChange) * 100));
+            return { nextChangeDate, status, progress, daysRemaining };
+        }
+        
+        // ========================================================================
+        // SISTEMA DE NOTIFICAÇÕES
+        // ========================================================================
+        
+        function checkStringingNotifications() {
+            if (!currentUser || !currentUser.stringingProfile || !currentUser.frequency) return;
+            userNotifications = [];
+            currentUser.stringingProfile.forEach((record, index) => {
+                const { status } = calculateNextStringChange(record, currentUser.frequency);
+                if (status === 'Troca próxima' || status === 'Troca recomendada!') {
+                    userNotifications.push({ id: `stringing-${index}-${record.date}`, message: `Sua **${record.racketName}** precisa de um novo encordoamento. ${status}` });
+                }
+            });
+            renderNotifications();
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notification-list');
+            const badge = document.getElementById('notification-badge');
+            if (!list || !badge) return;
+            if (userNotifications.length === 0) {
+                list.innerHTML = `<p class="p-4 text-sm text-gray-500 text-center">Nenhuma notificação.</p>`;
+                badge.classList.add('hidden');
+            } else {
+                list.innerHTML = userNotifications.map(n => `<a href="#" class="block px-4 py-3 text-sm hover:bg-gray-100">${n.message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</a>`).join('');
+                badge.classList.remove('hidden');
+            }
+        }
+
+        function toggleNotificationPanel() { document.getElementById('notification-panel')?.classList.toggle('hidden'); }
+
+        // ========================================================================
+        // LÓGICA DO ASSISTENTE IA (GEMINI) - APRIMORADO
+        // ========================================================================
+        function showAIAssistant() {
+            const modal = document.getElementById('ai-assistant-modal');
+            const chatBox = document.getElementById('ai-chat-box');
+            modal.classList.remove('hidden');
+            if (chatBox.innerHTML === '') addMessageToAIChat('assistant', 'Olá! Sou seu assistente pessoal. Posso ajudar com dicas para evitar dores, comparar equipamentos ou tirar dúvidas gerais. O que você gostaria de saber hoje?');
+        }
+
+        function addMessageToAIChat(sender, message) {
+            const chatBox = document.getElementById('ai-chat-box');
+            const bubble = document.createElement('div');
+            bubble.className = `w-fit max-w-lg rounded-xl p-3 ${sender === 'user' ? 'chat-bubble-user self-end' : 'chat-bubble-assistant self-start'}`;
+            bubble.innerHTML = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            chatBox.appendChild(bubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function handleAIChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('ai-chat-input');
+            const userMessage = input.value.trim();
+            if (!userMessage) return;
+            addMessageToAIChat('user', userMessage);
+            input.value = '';
+            const btn = document.getElementById('ai-chat-submit-btn');
+            showLoading(btn);
+
+            try {
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const systemPrompt = `Você é "Rackfy AI", um especialista amigável e experiente em tênis. Sua principal função é oferecer soluções e conselhos que vão além da simples recomendação de equipamentos, como dicas de exercícios para evitar dores, conselhos sobre técnica ou comparações conceituais. Após fornecer a solução principal, você DEVE recomendar equipamentos específicos (raquetes ou cordas) relevantes para a necessidade do usuário, usando os dados de contexto fornecidos. Ao final da sua resposta, SEMPRE direcione o usuário para as outras ferramentas do site. Por exemplo, sugira que usem a ferramenta 'Descubra' para uma análise mais aprofundada ou que pesquisem no 'Fórum' por avaliações reais dos equipamentos que você recomendou. É crucial que você incentive o uso das outras seções. Responda em português do Brasil. Use **negrito** para nomes de equipamentos.`;
+
+                // Constrói um contexto mais rico para a IA
+                let equipmentContext = '--- DADOS DE EQUIPAMENTOS DISPONÍVEIS ---\n';
+                equipmentContext += '\n**Raquetes:**\n' + racquetsDB.map(r => `- ${r.name} (Ideal para: ${r.profiles.join(', ')}; Níveis: ${r.levels.join(', ')})`).join('\n');
+                equipmentContext += '\n\n**Cordas:**\n' + stringsDB.map(s => `- ${s.name} (Tipo: ${s.type}, Foco: ${s.profile.join(', ')})`).join('\n');
+
+                let userContext = '';
+                if (currentUser) {
+                    userContext = `\n\n--- PERFIL DO USUÁRIO ATUAL ---\n` +
+                                `Nome: ${currentUser.name}\n` +
+                                `Nível: ${currentUser.level || 'Não informado'}\n` +
+                                `Raquete Principal: ${currentUser.racket || 'Não informada'}\n` +
+                                `Frequência de Jogo: ${currentUser.frequency || 'Não informada'}\n`;
+                }
+                
+                const fullPrompt = `${equipmentContext}${userContext}\n\n--- PERGUNTA DO USUÁRIO ---\n${userMessage}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                addMessageToAIChat('assistant', result.candidates[0].content.parts[0].text);
+            } catch (error) {
+                console.error("AI Error:", error);
+                addMessageToAIChat('assistant', 'Desculpe, o assistente está indisponível no momento. Tente novamente mais tarde.');
+            } finally {
+                hideLoading(btn, 'Enviar');
+            }
+        }
+        
+        // ========================================================================
+        // FUNÇÕES UTILITÁRIAS
+        // ========================================================================
+        function findAndShowSimilarStrings(targetStringName) {
+            const targetString = stringsDB.find(s => s.name === targetStringName);
+            if (!targetString) return;
+
+            const similarStrings = stringsDB
+                .filter(s => s.name !== targetStringName && s.priceTier === targetString.priceTier)
+                .map(s => {
+                    const diff = Math.abs(s.power - targetString.power) +
+                                Math.abs(s.comfort - targetString.comfort) +
+                                Math.abs(s.spin - targetString.spin) +
+                                Math.abs(s.stiffness - targetString.stiffness);
+                    return { ...s, similarity: diff };
+                })
+                .sort((a, b) => a.similarity - b.similarity)
+                .slice(0, 3);
+
+            const modalTitle = document.getElementById('similar-strings-title');
+            const modalContent = document.getElementById('similar-strings-content');
+            const modal = document.getElementById('similar-strings-modal');
+
+            modalTitle.textContent = `Cordas Similares a ${targetString.name}`;
+            
+            if (similarStrings.length === 0) {
+                modalContent.innerHTML = `<p class="text-gray-600">Nenhuma corda muito similar encontrada nesta faixa de preço.</p>`;
+            } else {
+                 modalContent.innerHTML = similarStrings.map(s => `
+                    <div class="p-3 border-b last:border-b-0 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold">${s.name}</p>
+                            <p class="text-sm text-gray-600 mb-2">${s.description}</p>
+                            <div class="flex gap-4 text-xs">
+                                <span><strong>Potência:</strong> ${s.power}/10</span>
+                                <span><strong>Conforto:</strong> ${s.comfort}/10</span>
+                                <span><strong>Spin:</strong> ${s.spin}/10</span>
+                            </div>
+                        </div>
+                        <button class="add-to-selection-btn bg-indigo-100 text-indigo-700 text-xs font-bold py-1 px-3 rounded-md hover:bg-indigo-200" data-name="${s.name}" data-type="string">Add</button>
+                    </div>
+                `).join('');
+            }
+            
+            updateSelectionButtonsUI();
+            modal.classList.remove('hidden');
+        }
+
+        function addToSelection(name, type) {
+            let alreadyExists = false;
+            if (type === 'racket') {
+                if (!currentSelection.rackets.includes(name)) {
+                    currentSelection.rackets.push(name);
+                } else {
+                    alreadyExists = true;
+                }
+            } else if (type === 'string') {
+                if (!currentSelection.strings.includes(name)) {
+                    currentSelection.strings.push(name);
+                } else {
+                    alreadyExists = true;
+                }
+            }
+
+            if (alreadyExists) return;
+
+            showToast(`${name} adicionado à seleção!`);
+            renderSelectionGroup();
+            updateSelectionButtonsUI();
+        }
+
+        function updateSelectionButtonsUI() {
+            document.querySelectorAll('.add-to-selection-btn').forEach(btn => {
+                const name = btn.dataset.name;
+                const type = btn.dataset.type;
+                const isSelected = (type === 'racket' && currentSelection.rackets.includes(name)) || 
+                                   (type === 'string' && currentSelection.strings.includes(name));
+
+                if (isSelected) {
+                    btn.disabled = true;
+                    btn.textContent = 'Adicionado';
+                    btn.classList.add('cursor-not-allowed');
+
+                    if(btn.closest('#similar-strings-modal')) { // Botão dentro do modal
+                         btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'hover:bg-indigo-200');
+                         btn.classList.add('bg-green-600', 'text-white');
+                    } else if (type === 'racket') {
+                        btn.classList.remove('bg-indigo-600');
+                        btn.classList.add('bg-green-600');
+                    } else { // String button in main table
+                        btn.classList.remove('bg-indigo-100', 'text-indigo-700', 'hover:bg-indigo-200');
+                        btn.classList.add('bg-green-200', 'text-green-800');
+                    }
+                } 
+            });
+        }
+
+
+        function renderSelectionGroup() {
+            const groupContainer = document.getElementById('selection-group');
+            const listContainer = document.getElementById('selection-list');
+            if (!groupContainer || !listContainer) return;
+
+            const hasItems = currentSelection.rackets.length > 0 || currentSelection.strings.length > 0;
+
+            if (hasItems) {
+                let racketsHTML = currentSelection.rackets.length > 0 ? `<div class="mb-2"><h4 class="font-semibold text-indigo-700">Raquetes:</h4><ul class="list-disc list-inside">${currentSelection.rackets.map(r => `<li>${r}</li>`).join('')}</ul></div>` : '';
+                let stringsHTML = currentSelection.strings.length > 0 ? `<div><h4 class="font-semibold text-indigo-700">Cordas:</h4><ul class="list-disc list-inside">${currentSelection.strings.map(s => `<li>${s}</li>`).join('')}</ul></div>` : '';
+                
+                listContainer.innerHTML = racketsHTML + stringsHTML;
+                groupContainer.classList.remove('hidden');
+                 // Animação de entrada
+                requestAnimationFrame(() => {
+                    groupContainer.style.opacity = 1;
+                    groupContainer.style.transform = 'translateY(0)';
+                });
+
+            } else {
+                groupContainer.classList.add('hidden');
+                groupContainer.style.opacity = 0;
+            }
+        }
+
+        function confirmAction(message, callback) {
+            document.getElementById('confirmation-message').textContent = message;
+            document.getElementById('confirmation-modal').classList.remove('hidden');
+            currentConfirmationCallback = callback;
+        }
+
+        function showLoading(button) { button.disabled = true; button.querySelector('span').textContent = ''; button.classList.add('animate-pulse'); const spinner = document.createElement('div'); spinner.className = 'w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin'; button.appendChild(spinner); }
+        function hideLoading(button, originalText) { button.disabled = false; button.classList.remove('animate-pulse'); button.querySelector('span').textContent = originalText; const spinner = button.querySelector('div'); if(spinner) button.removeChild(spinner); }
+        function showToast(message, type = 'success') { const toast = document.getElementById('toast'); const toastMessage = document.getElementById('toast-message'); toast.classList.remove('bg-gray-900', 'bg-red-600'); toast.classList.add(type === 'success' ? 'bg-gray-900' : 'bg-red-600'); toastMessage.textContent = message; toast.classList.remove('opacity-0', 'translate-y-2'); setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-2'); }, 3000); }
+
+        function handleImagePreview(event, previewElementId, isProfilePic = false) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewEl = document.getElementById(previewElementId);
+                previewEl.src = e.target.result;
+                previewEl.classList.remove('hidden');
+                if (isProfilePic) saveProfilePicture(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function saveProfilePicture(base64Url) {
+            if (!currentUser) return;
+            showToast("Salvando foto de perfil...");
+            const storageRef = ref(storage, `profile-pictures/${userId}`);
+            try {
+                const uploadResult = await uploadString(storageRef, base64Url, 'data_url');
+                const downloadURL = await getDownloadURL(uploadResult.ref);
+                const userRef = doc(db, `/artifacts/${appId}/users/${userId}`);
+                await setDoc(userRef, { photoURL: downloadURL }, { merge: true });
+                currentUser.photoURL = downloadURL;
+                showToast('Foto de perfil atualizada!');
+            } catch (error) {
+                console.error("Erro ao salvar foto:", error);
+                showToast('Erro ao salvar foto.', 'error');
+            }
+        }
+        
+        async function saveRecommendationToProfile(recommendationData) {
+            if (!currentUser) return;
+            const userRef = doc(db, `/artifacts/${appId}/users/${userId}`);
+            try {
+                const currentRecommendations = currentUser.recommendations || [];
+                // Remove a última se ela não tiver uma seleção de usuário, para evitar duplicatas
+                if (currentRecommendations.length > 0 && !currentRecommendations[currentRecommendations.length - 1].userSelection) {
+                    currentRecommendations.pop();
+                }
+                currentRecommendations.push(recommendationData);
+                await setDoc(userRef, { recommendations: currentRecommendations }, { merge: true });
+                currentUser.recommendations = currentRecommendations;
+                showToast("Consulta salva no seu perfil!");
+            } catch (error) {
+                console.error("Erro ao salvar recomendação:", error);
+            }
+        }
+
+        async function saveCurrentSelectionToLatestRecommendation() {
+            if (!currentUser || !currentUser.recommendations || currentUser.recommendations.length === 0) return;
+            
+            const userRef = doc(db, `/artifacts/${appId}/users/${userId}`);
+            try {
+                const updatedRecommendations = [...currentUser.recommendations];
+                const lastRecommendation = updatedRecommendations[updatedRecommendations.length - 1];
+                lastRecommendation.userSelection = currentSelection; // Adiciona a seleção atual
+
+                await setDoc(userRef, { recommendations: updatedRecommendations }, { merge: true });
+                currentUser.recommendations = updatedRecommendations;
+                showToast("Sua seleção foi salva junto com a consulta!");
+            } catch(error) {
+                console.error("Erro ao salvar seleção final:", error);
+            }
+        }
+        
+        function getFirebaseAuthErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/invalid-email': return 'O email fornecido não é válido.';
+                case 'auth/user-not-found': return 'Nenhum usuário encontrado com este email.';
+                case 'auth/wrong-password': return 'Senha incorreta. Tente novamente.';
+                case 'auth/email-already-in-use': return 'Este email já está em uso por outra conta.';
+                case 'auth/weak-password': return 'A senha deve ter pelo menos 6 caracteres.';
+                case 'auth/unauthorized-domain': return 'Este domínio não está autorizado para login. Verifique a configuração no Firebase.';
+                default: return 'Ocorreu um erro. Tente novamente.';
+            }
+        }
+    </script>
